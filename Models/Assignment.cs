@@ -1,12 +1,8 @@
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+namespace NjuCsCmsHelper.Models;
 
-namespace NjuCsCmsHelper.Models
+public class Assignment
 {
-    public class Assignment
-    {
-        public int Id { get; set; }
-        public DateTime DeadLine { get; set; }
-    }
+    public int Id { get; set; }
+    public int NumberOfProblems { get; set; }
+    public DateTimeOffset DeadLine { get; set; }
 }

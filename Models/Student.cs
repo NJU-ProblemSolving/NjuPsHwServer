@@ -1,16 +1,10 @@
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+namespace NjuCsCmsHelper.Models;
 
-namespace NjuCsCmsHelper.Models
+public class Student
 {
-    public class Student
-    {
-        public int Id { get; set; }
-        [Required]
-        public string Name { get; set; }
-        public int ReviewerId { get; set; }
+    public int Id { get; set; }
+    public string Name { get; set; } = null !;
+    public int ReviewerId { get; set; }
 
-        public virtual ICollection<Submission> Submissions { get; set; }
-    }
+    public virtual ICollection<Submission> Submissions { get; set; } = null !;
 }

@@ -1,36 +1,40 @@
-using System;
-using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations;
+namespace NjuCsCmsHelper.Models;
 
-namespace NjuCsCmsHelper.Models
+public class Submission
 {
-    public class Submission
+    public int Id { get; set; }
+    public int StudentId { get; set; }
+    public int AssignmentId { get; set; }
+    public DateTimeOffset SubmittedAt { get; set; }
+    public Grade Grade { get; set; }
+    public string Comment { get; set; } = null !;
+    public string Track { get; set; } = null !;
+
+    public virtual Student Student { get; set; } = null !;
+    public virtual Assignment Assignment { get; set; } = null !;
+
+    public virtual ICollection<Mistake> NeedCorrection { get; set; } = null !;
+    public virtual ICollection<Mistake> HasCorrected { get; set; } = null !;
+}
+
+public enum Grade
+{
+    None,
+    A,
+    Aminus,
+    B,
+    Bminus,
+    C,
+    D,
+}
+
+public static class GradeExtensions
+{
+    public static string ToDescriptionString(this Grade grade)
     {
-        public int Id { get; set; }
-        public int StudentId { get; set; }
-        public int AssignmentId { get; set; }
-        public DateTime SubmittedAt { get; set; }
-        public Grade Grade { get; set; }
-        [Required]
-        public string Comment { get; set; }
-        [Required]
-        public string Track { get; set; }
-
-        public virtual Student Student { get; set; }
-        public virtual Assignment Assignment { get; set; }
-
-        public virtual ICollection<Mistake> NeedCorrection { get; set; }
-        public virtual ICollection<Mistake> HasCorrected { get; set; }
-    }
-
-    public enum Grade
-    {
-        None,
-        A,
-        Aminus,
-        B,
-        Bminus,
-        C,
-        D,
+        return grade switch {
+            Grade.None => "未批改", Grade.A => "A", Grade.Aminus => "A-", Grade.B => "B",
+            Grade.Bminus => "B-",   Grade.C => "C", Grade.D => "D",       _ => throw new ArgumentOutOfRangeException(),
+        };
     }
 }
