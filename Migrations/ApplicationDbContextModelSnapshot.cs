@@ -9,145 +9,245 @@ using NjuCsCmsHelper.Models;
 
 namespace NjuCsCmsHelper.Server.Migrations
 {
-    [DbContext(typeof(ApplicationDbContext))]
+    [DbContext(typeof(AppDbContext))]
     partial class ApplicationDbContextModelSnapshot : ModelSnapshot
     {
         protected override void BuildModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
-            modelBuilder.HasAnnotation("ProductVersion", "6.0.0-rc.2.21480.5");
+            modelBuilder.HasAnnotation("ProductVersion", "6.0.1");
 
-            modelBuilder.Entity("NjuCsCmsHelper.Models.Assignment", b => {
-                b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("INTEGER");
+            modelBuilder.Entity("NjuCsCmsHelper.Models.Assignment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
 
-                b.Property<long>("DeadLine").HasColumnType("INTEGER");
+                    b.Property<long>("Deadline")
+                        .HasColumnType("INTEGER");
 
-                b.Property<int>("NumberOfProblems").HasColumnType("INTEGER");
+                    b.Property<int>("NumberOfProblems")
+                        .HasColumnType("INTEGER");
 
-                b.HasKey("Id");
+                    b.HasKey("Id");
 
-                b.ToTable("Assignments");
-            });
+                    b.ToTable("Assignments");
+                });
 
-            modelBuilder.Entity("NjuCsCmsHelper.Models.Mistake", b => {
-                b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("INTEGER");
+            modelBuilder.Entity("NjuCsCmsHelper.Models.Attachment", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
 
-                b.Property<int>("AssignmentId").HasColumnType("INTEGER");
+                    b.Property<string>("Filename")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
-                b.Property<int?>("CorrectedInId").HasColumnType("INTEGER");
+                    b.Property<int>("SubmissionId")
+                        .HasColumnType("INTEGER");
 
-                b.Property<int>("MakedInId").HasColumnType("INTEGER");
+                    b.HasKey("Id");
 
-                b.Property<int>("ProblemId").HasColumnType("INTEGER");
+                    b.HasIndex("SubmissionId");
 
-                b.Property<int>("StudentId").HasColumnType("INTEGER");
+                    b.ToTable("Attachments");
+                });
 
-                b.HasKey("Id");
+            modelBuilder.Entity("NjuCsCmsHelper.Models.Mistake", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
 
-                b.HasIndex("AssignmentId");
+                    b.Property<int>("AssignmentId")
+                        .HasColumnType("INTEGER");
 
-                b.HasIndex("CorrectedInId");
+                    b.Property<int?>("CorrectedInId")
+                        .HasColumnType("INTEGER");
 
-                b.HasIndex("MakedInId");
+                    b.Property<int>("MakedInId")
+                        .HasColumnType("INTEGER");
 
-                b.HasIndex("StudentId");
+                    b.Property<int>("ProblemId")
+                        .HasColumnType("INTEGER");
 
-                b.ToTable("Mistakes");
-            });
+                    b.Property<int>("StudentId")
+                        .HasColumnType("INTEGER");
 
-            modelBuilder.Entity("NjuCsCmsHelper.Models.Student", b => {
-                b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("INTEGER");
+                    b.HasKey("Id");
 
-                b.Property<string>("Name").IsRequired().HasColumnType("TEXT");
+                    b.HasIndex("AssignmentId");
 
-                b.Property<int>("ReviewerId").HasColumnType("INTEGER");
+                    b.HasIndex("CorrectedInId");
 
-                b.HasKey("Id");
+                    b.HasIndex("MakedInId");
 
-                b.ToTable("Students");
-            });
+                    b.HasIndex("StudentId", "AssignmentId", "ProblemId")
+                        .IsUnique();
 
-            modelBuilder.Entity("NjuCsCmsHelper.Models.Submission", b => {
-                b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("INTEGER");
+                    b.ToTable("Mistakes");
+                });
 
-                b.Property<int>("AssignmentId").HasColumnType("INTEGER");
+            modelBuilder.Entity("NjuCsCmsHelper.Models.Student", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
 
-                b.Property<string>("Comment").IsRequired().HasColumnType("TEXT");
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
-                b.Property<int>("Grade").HasColumnType("INTEGER");
+                    b.Property<int>("ReviewerId")
+                        .HasColumnType("INTEGER");
 
-                b.Property<int>("StudentId").HasColumnType("INTEGER");
+                    b.HasKey("Id");
 
-                b.Property<long>("SubmittedAt").HasColumnType("INTEGER");
+                    b.ToTable("Students");
+                });
 
-                b.Property<string>("Track").IsRequired().HasColumnType("TEXT");
+            modelBuilder.Entity("NjuCsCmsHelper.Models.Submission", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("INTEGER");
 
-                b.HasKey("Id");
+                    b.Property<int>("AssignmentId")
+                        .HasColumnType("INTEGER");
 
-                b.HasIndex("AssignmentId");
+                    b.Property<string>("Comment")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
-                b.HasIndex("StudentId");
+                    b.Property<int>("Grade")
+                        .HasColumnType("INTEGER");
 
-                b.ToTable("Submissions");
-            });
+                    b.Property<int>("StudentId")
+                        .HasColumnType("INTEGER");
 
-            modelBuilder.Entity("NjuCsCmsHelper.Models.Mistake", b => {
-                b.HasOne("NjuCsCmsHelper.Models.Assignment", "Assignment")
-                    .WithMany()
-                    .HasForeignKey("AssignmentId")
-                    .OnDelete(DeleteBehavior.Cascade)
-                    .IsRequired();
+                    b.Property<long>("SubmittedAt")
+                        .HasColumnType("INTEGER");
 
-                b.HasOne("NjuCsCmsHelper.Models.Submission", "CorrectedIn")
-                    .WithMany("HasCorrected")
-                    .HasForeignKey("CorrectedInId");
+                    b.Property<string>("Track")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
 
-                b.HasOne("NjuCsCmsHelper.Models.Submission", "MakedIn")
-                    .WithMany("NeedCorrection")
-                    .HasForeignKey("MakedInId")
-                    .OnDelete(DeleteBehavior.Cascade)
-                    .IsRequired();
+                    b.HasKey("Id");
 
-                b.HasOne("NjuCsCmsHelper.Models.Student", "Student")
-                    .WithMany()
-                    .HasForeignKey("StudentId")
-                    .OnDelete(DeleteBehavior.Cascade)
-                    .IsRequired();
+                    b.HasIndex("AssignmentId");
 
-                b.Navigation("Assignment");
+                    b.HasIndex("StudentId", "AssignmentId")
+                        .IsUnique();
 
-                b.Navigation("CorrectedIn");
+                    b.ToTable("Submissions");
+                });
 
-                b.Navigation("MakedIn");
+            modelBuilder.Entity("NjuCsCmsHelper.Models.Token", b =>
+                {
+                    b.Property<string>("Id")
+                        .HasColumnType("TEXT");
 
-                b.Navigation("Student");
-            });
+                    b.Property<bool>("IsAdmin")
+                        .HasColumnType("INTEGER");
 
-            modelBuilder.Entity("NjuCsCmsHelper.Models.Submission", b => {
-                b.HasOne("NjuCsCmsHelper.Models.Assignment", "Assignment")
-                    .WithMany()
-                    .HasForeignKey("AssignmentId")
-                    .OnDelete(DeleteBehavior.Cascade)
-                    .IsRequired();
+                    b.Property<int>("StudentId")
+                        .HasColumnType("INTEGER");
 
-                b.HasOne("NjuCsCmsHelper.Models.Student", "Student")
-                    .WithMany("Submissions")
-                    .HasForeignKey("StudentId")
-                    .OnDelete(DeleteBehavior.Cascade)
-                    .IsRequired();
+                    b.HasKey("Id");
 
-                b.Navigation("Assignment");
+                    b.HasIndex("StudentId");
 
-                b.Navigation("Student");
-            });
+                    b.ToTable("Tokens");
+                });
 
-            modelBuilder.Entity("NjuCsCmsHelper.Models.Student", b => { b.Navigation("Submissions"); });
+            modelBuilder.Entity("NjuCsCmsHelper.Models.Attachment", b =>
+                {
+                    b.HasOne("NjuCsCmsHelper.Models.Submission", "Submission")
+                        .WithMany("Attachments")
+                        .HasForeignKey("SubmissionId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
-            modelBuilder.Entity("NjuCsCmsHelper.Models.Submission", b => {
-                b.Navigation("HasCorrected");
+                    b.Navigation("Submission");
+                });
 
-                b.Navigation("NeedCorrection");
-            });
+            modelBuilder.Entity("NjuCsCmsHelper.Models.Mistake", b =>
+                {
+                    b.HasOne("NjuCsCmsHelper.Models.Assignment", "Assignment")
+                        .WithMany()
+                        .HasForeignKey("AssignmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NjuCsCmsHelper.Models.Submission", "CorrectedIn")
+                        .WithMany("HasCorrected")
+                        .HasForeignKey("CorrectedInId");
+
+                    b.HasOne("NjuCsCmsHelper.Models.Submission", "MakedIn")
+                        .WithMany("NeedCorrection")
+                        .HasForeignKey("MakedInId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NjuCsCmsHelper.Models.Student", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Assignment");
+
+                    b.Navigation("CorrectedIn");
+
+                    b.Navigation("MakedIn");
+
+                    b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("NjuCsCmsHelper.Models.Submission", b =>
+                {
+                    b.HasOne("NjuCsCmsHelper.Models.Assignment", "Assignment")
+                        .WithMany()
+                        .HasForeignKey("AssignmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("NjuCsCmsHelper.Models.Student", "Student")
+                        .WithMany("Submissions")
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Assignment");
+
+                    b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("NjuCsCmsHelper.Models.Token", b =>
+                {
+                    b.HasOne("NjuCsCmsHelper.Models.Student", "Student")
+                        .WithMany()
+                        .HasForeignKey("StudentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Student");
+                });
+
+            modelBuilder.Entity("NjuCsCmsHelper.Models.Student", b =>
+                {
+                    b.Navigation("Submissions");
+                });
+
+            modelBuilder.Entity("NjuCsCmsHelper.Models.Submission", b =>
+                {
+                    b.Navigation("Attachments");
+
+                    b.Navigation("HasCorrected");
+
+                    b.Navigation("NeedCorrection");
+                });
 #pragma warning restore 612, 618
         }
     }

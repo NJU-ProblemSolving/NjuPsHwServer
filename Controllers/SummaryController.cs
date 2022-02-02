@@ -1,16 +1,16 @@
-using NjuCsCmsHelper.Models;
-
 namespace NjuCsCmsHelper.Server.Controllers;
+
+using Models;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize]
+[Authorize(Roles = "Admin")]
 public class SummaryController : ControllerBase
 {
-    private readonly ILogger<StudentController> logger;
-    private readonly Models.ApplicationDbContext dbContext;
+    private readonly ILogger<SummaryController> logger;
+    private readonly AppDbContext dbContext;
 
-    public SummaryController(ILogger<StudentController> logger, Models.ApplicationDbContext dbContext)
+    public SummaryController(ILogger<SummaryController> logger, AppDbContext dbContext)
     {
         this.logger = logger;
         this.dbContext = dbContext;
@@ -31,7 +31,7 @@ public class SummaryController : ControllerBase
         foreach (var student in dbContext.Students.ToList())
         {
             res.Append($"{student.Id}, {student.Name}");
-            var score = 0.0;
+            var totalScore = 0.0;
             foreach (var assignmentId in assignments)
             {
                 var submission =
@@ -46,18 +46,20 @@ public class SummaryController : ControllerBase
                 if (submission == null) { res.Append(", 未提交, -"); }
                 else
                 {
-                    score += submission.Grade switch {
-                        Grade.A => 100, Grade.Aminus => 90, Grade.B => 80, Grade.Bminus => 75,
-                        Grade.C => 70,  Grade.D => 60,      _ => 0,
-                    };
-                    res.Append($", {submission.Grade.ToDescriptionString()}");
-                    if (submission.Total == 0)
-                        res.Append($", -");
+                    var submissionScore = submission.Grade.ToScore();
+                    totalScore += submissionScore;
+                    res.Append($", {submission.Grade.GetDescription()}");
+                    if (submission.Total == 0) { res.Append($", -"); }
                     else
+                    {
+                        totalScore += (100 - submissionScore) * 0.1 * submission.Corrected / submission.Total;
+                        totalScore -= MathF.Max(100 - submissionScore, 10) * 0.5 *
+                                      (submission.Total - submission.Corrected) / submission.Total;
                         res.Append($", {submission.Corrected}/{submission.Total}");
+                    }
                 }
             }
-            res.AppendLine($", {score / assignments.Count}");
+            res.AppendLine($", {totalScore / assignments.Count}");
         }
 
         return Ok(res.ToString());

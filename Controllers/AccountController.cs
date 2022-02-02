@@ -1,5 +1,3 @@
-using System.Text.RegularExpressions;
-
 namespace NjuCsCmsHelper.Server.Controllers;
 
 using Models;
@@ -10,28 +8,34 @@ using Models;
 public class AccountController : ControllerBase
 {
     private readonly ILogger<AccountController> logger;
+    private readonly AppDbContext dbContext;
 
-    public AccountController(ILogger<AccountController> logger) { this.logger = logger; }
+    public AccountController(ILogger<AccountController> logger, AppDbContext dbContext)
+    {
+        this.logger = logger;
+        this.dbContext = dbContext;
+    }
 
     [HttpPost]
     [AllowAnonymous]
     public async Task<IActionResult> Login([FromBody] string token)
     {
-        if (token == "d2620ea616604b0ab5421cd434ceda87")
-        {
-            var claims = new Claim[] {
-                new Claim("user", "AdminUser"),
-                new Claim("role", "Admin"),
-            };
-            var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-            var principal = new ClaimsPrincipal(identity);
-            await HttpContext.SignInAsync(principal);
-            return Ok();
-        }
-        else
-        {
-            return Unauthorized();
-        }
+        var tokenInfo = await dbContext.Tokens.Include(x => x.Student).SingleOrDefaultAsync(x => x.Id == token);
+        if (tokenInfo == null) return Unauthorized();
+
+        var studentId = tokenInfo.StudentId;
+        var studentName = tokenInfo.Student.Name;
+        var claims = new List<Claim> {
+            new Claim(AppUserClaims.StudentId, studentId.ToString()),
+            new Claim(AppUserClaims.Name, studentName),
+        };
+        if (tokenInfo.IsAdmin) claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var principal = new ClaimsPrincipal(identity);
+        await HttpContext.SignInAsync(principal);
+
+        return Ok(new { Id = studentId, Name = studentName, IsAdmin = tokenInfo.IsAdmin });
     }
 
     [HttpGet]

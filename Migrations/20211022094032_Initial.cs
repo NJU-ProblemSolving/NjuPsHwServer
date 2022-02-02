@@ -13,7 +13,7 @@ namespace NjuCsCmsHelper.Server.Migrations
                 columns: table => new { Id = table.Column<int>(type: "INTEGER", nullable: false)
                                                  .Annotation("Sqlite:Autoincrement", true),
                                         NumberOfProblems = table.Column<int>(type: "INTEGER", nullable: false),
-                                        DeadLine = table.Column<long>(type: "INTEGER", nullable: false) },
+                                        Deadline = table.Column<long>(type: "INTEGER", nullable: false) },
                 constraints: table => { table.PrimaryKey("PK_Assignments", x => x.Id); });
 
             migrationBuilder.CreateTable(name: "Students",

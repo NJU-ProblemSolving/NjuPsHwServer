@@ -10,7 +10,7 @@ using NjuCsCmsHelper.Models;
 
 namespace NjuCsCmsHelper.Server.Migrations
 {
-    [DbContext(typeof(ApplicationDbContext))]
+    [DbContext(typeof(AppDbContext))]
     [Migration("20211022094032_Initial")]
     partial class Initial
     {
@@ -22,7 +22,7 @@ namespace NjuCsCmsHelper.Server.Migrations
             modelBuilder.Entity("NjuCsCmsHelper.Models.Assignment", b => {
                 b.Property<int>("Id").ValueGeneratedOnAdd().HasColumnType("INTEGER");
 
-                b.Property<long>("DeadLine").HasColumnType("INTEGER");
+                b.Property<long>("Deadline").HasColumnType("INTEGER");
 
                 b.Property<int>("NumberOfProblems").HasColumnType("INTEGER");
 

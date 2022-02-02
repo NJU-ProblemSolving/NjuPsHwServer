@@ -1,5 +1,6 @@
 namespace NjuCsCmsHelper.Models;
 
+[Index(nameof(StudentId), nameof(AssignmentId), nameof(ProblemId), IsUnique = true)]
 public class Mistake
 {
     public int Id { get; set; }
