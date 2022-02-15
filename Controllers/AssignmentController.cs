@@ -42,8 +42,8 @@ public class AssignmentController : ControllerBase
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create([FromBody] Assignment assignment)
     {
-        if (await dbContext.Assignments.AnyAsync(a => a.Id == assignment.Id))
-            return Conflict("Assignment ID already exists");
+        if (await dbContext.Assignments.AnyAsync(a => a.Name == assignment.Name))
+            return Conflict("Assignment already exists");
 
         dbContext.Assignments.Add(assignment);
         await dbContext.SaveChangesAsync();

@@ -11,10 +11,10 @@ public class SubmissionController : ControllerBase
     private readonly ILogger<SubmissionController> logger;
     private readonly AppDbContext dbContext;
     private readonly IAuthorizationService authorizationService;
-    private readonly IAttachmentService attachmentService;
+    private readonly IMyAppService attachmentService;
 
     public SubmissionController(ILogger<SubmissionController> logger, AppDbContext dbContext,
-                                IAuthorizationService authorizationService, IAttachmentService attachmentService)
+                                IAuthorizationService authorizationService, IMyAppService attachmentService)
     {
         this.logger = logger;
         this.dbContext = dbContext;
@@ -36,7 +36,7 @@ public class SubmissionController : ControllerBase
             await authorizationService.AuthorizeAsync(User, studentId, OwnerOrAdminRequirement.Instance);
         if (!authorizeResult.Succeeded) return Unauthorized();
 
-        if (file.Length > AppConfig.AttachmentSizeLimit) return BadRequest();
+        if (file.Length > AppConfig.AttachmentSizeLimit) return BadRequest("文件过大");
 
         if (!await dbContext.Assignments.AnyAsync(a => a.Id == assignmentId)) return NotFound("assignmentId");
         if (!await dbContext.Students.AnyAsync(s => s.Id == studentId)) return NotFound("studentId");

@@ -1,8 +1,7 @@
 namespace NjuCsCmsHelper.Server.Controllers;
 
-using System.Text;
-using Microsoft.Extensions.Caching.Memory;
 using Models;
+using Services;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -11,33 +10,40 @@ public class MistakeController : ControllerBase
 {
     private readonly ILogger<MistakeController> logger;
     private readonly AppDbContext dbContext;
-    private IMemoryCache cache;
+    private readonly IMyAppService myAppService;
 
-    public MistakeController(ILogger<MistakeController> logger, AppDbContext dbContext, IMemoryCache cache)
+    public MistakeController(ILogger<MistakeController> logger, AppDbContext dbContext, IMyAppService myAppService)
     {
         this.logger = logger;
         this.dbContext = dbContext;
-        this.cache = cache;
+        this.myAppService = myAppService;
     }
 
     /// <summary>获取所有人未订正的错题信息</summary>
     [HttpGet]
     [Authorize(Roles = "Admin")]
-    [ProducesResponseType(typeof(List<MistakeInfo>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(List<MistakesOfStudent>), StatusCodes.Status201Created)]
     public async Task<IActionResult> Get()
     {
         var list = await dbContext.Mistakes.Where(m => m.CorrectedIn == null)
-                       .Select(m => new { m.StudentId, Mistake = $"{m.AssignmentId}-{m.ProblemId}" })
+                       .Select(m => new { m.StudentId, m.AssignmentId, m.ProblemId })
                        .ToListAsync();
         var res = list.GroupBy(m => m.StudentId)
-                      .Select(g => new MistakeInfo { StudentId = g.Key, Mistakes = g.Select(m => m.Mistake).ToList() })
+                      .Select(g => new MistakesOfStudent { StudentId = g.Key, Mistakes = g.Select(m => myAppService.GetProblemDTO(m.AssignmentId, m.ProblemId).Result).ToList() })
                       .ToList();
         return Ok(res);
     }
 }
 
-public class MistakeInfo
+    public class ProblemDTO
+    {
+        public int AssignmentId { get; set; }
+        public int ProblemId { get; set; }
+        public string Display { get; set; } = null!;
+    }
+
+public class MistakesOfStudent
 {
     public int StudentId { get; set; }
-    public List<string> Mistakes { get; set; } = null !;
+    public List<ProblemDTO> Mistakes { get; set; } = null!;
 }

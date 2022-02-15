@@ -13,17 +13,17 @@ public class ReviewController : ControllerBase
     private readonly ILogger<ReviewController> logger;
     private readonly AppDbContext dbContext;
     private readonly IAuthorizationService authorizationService;
-    private readonly IAttachmentService attachmentService;
+    private readonly IMyAppService myAppService;
 
     private static readonly Regex ProblemNameRegex = new(@"(\d+)-(\d+)");
 
     public ReviewController(ILogger<ReviewController> logger, AppDbContext dbContext,
-                            IAuthorizationService authorizationService, IAttachmentService attachmentService)
+                            IAuthorizationService authorizationService, IMyAppService myAppService)
     {
         this.logger = logger;
         this.dbContext = dbContext;
         this.authorizationService = authorizationService;
-        this.attachmentService = attachmentService;
+        this.myAppService = myAppService;
     }
 
     /// <summary>获取评阅结果</summary>
@@ -34,23 +34,25 @@ public class ReviewController : ControllerBase
     [ProducesResponseType(typeof(List<ReviewInfoDTO>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Get(int assignmentId, int? reviewerId)
     {
-        if (!await IsAssignmentIdExists(assignmentId)) return NotFound("Assignment ID not exists");
+        var assignment = await GetAssignment(assignmentId);
+        if (assignment == null) return NotFound("Assignment ID not exists");
 
         var submissions = dbContext.Submissions.Where(submission => submission.AssignmentId == assignmentId);
         if (reviewerId != null)
             submissions = submissions.Where(submission => submission.Student.ReviewerId == reviewerId);
 
         var infos = await submissions
-                        .Select(submission => new ReviewInfoDTO {
+                        .Select(submission => new ReviewInfoDTO
+                        {
                             StudentId = submission.StudentId,
                             StudentName = submission.Student.Name,
                             SubmittedAt = submission.SubmittedAt,
                             Grade = submission.Grade,
-                            NeedCorrection = submission.NeedCorrection
-                                                 .Select(mistake => $"{mistake.AssignmentId}-{mistake.ProblemId}")
+                            NeedCorrection = submission.NeedCorrection.OrderBy(m => m.AssignmentId).ThenBy(m => m.ProblemId)
+                                                 .Select(m => myAppService.GetProblemDTO(m).Result)
                                                  .ToList(),
                             HasCorrected =
-                                submission.HasCorrected.Select(mistake => $"{mistake.AssignmentId}-{mistake.ProblemId}")
+                                submission.HasCorrected.OrderBy(m => m.AssignmentId).ThenBy(m => m.ProblemId).Select(m => myAppService.GetProblemDTO(m).Result)
                                     .ToList(),
                             Comment = submission.Comment,
                             Track = submission.Track,
@@ -87,7 +89,8 @@ public class ReviewController : ControllerBase
             }
             catch (HttpResponseException ex)
             {
-                return new ObjectResult(ex.Value) {
+                return new ObjectResult(ex.Value)
+                {
                     StatusCode = ex.Status,
                 };
             }
@@ -99,49 +102,46 @@ public class ReviewController : ControllerBase
 
     private Task<bool> IsAssignmentIdExists(int assignmentId) => dbContext.Assignments.AnyAsync(a => a.Id ==
                                                                                                      assignmentId);
+    private Task<Assignment?> GetAssignment(int assignmentId) => dbContext.Assignments.SingleOrDefaultAsync(a => a.Id ==
+                                                                                                     assignmentId);
+    private Task<Assignment?> GetAssignment(string assignmentName) => dbContext.Assignments.SingleOrDefaultAsync(a => a.Name ==
+                                                                                                     assignmentName);
     private Task<bool> IsStudentIdExists(int studentId) => dbContext.Students.AnyAsync(s => s.Id == studentId);
 
-    private (int, int) ParseProblemId(string problemName)
+    private async Task SetMistake(ICollection<ProblemDTO> problemList, int studentId, Submission submission)
     {
-        var matchResult = ProblemNameRegex.Match(problemName);
-        if (!matchResult.Success) throw new FormatException($"Invalid problem name `{problemName}`");
-        var assignmentId = int.Parse(matchResult.Groups[1].Value);
-        var problemId = int.Parse(matchResult.Groups[2].Value);
-        return (assignmentId, problemId);
-    }
-    private async Task SetMistake(ICollection<string> problemNameList, int studentId, Submission submission)
-    {
-        var mistakes = await dbContext.Mistakes.Where(m => m.MakedInId == submission.Id).ToListAsync();
-        var taskList = problemNameList.Select(async problem => {
-            var (assignmentId, problemId) = ParseProblemId(problem);
-            var mistake = mistakes.SingleOrDefault(mistake => mistake.AssignmentId == assignmentId &&
-                                                              mistake.ProblemId == problemId);
+        var mistakes = await dbContext.Mistakes.Where(m => m.MadeInId == submission.Id).ToListAsync();
+        var taskList = problemList.Select(async problem =>
+        {
+            var mistake = mistakes.SingleOrDefault(mistake => mistake.AssignmentId == problem.AssignmentId &&
+                                                              mistake.ProblemId == problem.ProblemId);
             if (mistake != null)
             {
                 mistakes.Remove(mistake);
                 return;
             }
-            if (!await IsAssignmentIdExists(assignmentId))
+            if (!await IsAssignmentIdExists(problem.AssignmentId))
                 throw new HttpResponseException(StatusCodes.Status404NotFound,
-                                                $"Assignemnt ID `{assignmentId} not exists");
-            mistake = new Mistake {
+                                                $"Assignemnt ID of problem {problem} not exists");
+            mistake = new Mistake
+            {
                 StudentId = studentId,
-                AssignmentId = assignmentId,
-                ProblemId = problemId,
-                MakedIn = submission,
+                AssignmentId = problem.AssignmentId,
+                ProblemId = problem.ProblemId,
+                MadeIn = submission,
             };
             await dbContext.Mistakes.AddAsync(mistake);
         });
         await Task.WhenAll(taskList);
         dbContext.Mistakes.RemoveRange(mistakes);
     }
-    private async Task CorrectMistake(ICollection<string> problemNameList, int studentId, Submission submission)
+    private async Task CorrectMistake(ICollection<ProblemDTO> problemList, int studentId, Submission submission)
     {
-        var taskList = problemNameList.Select(async problem => {
-            var (assignmentId, problemId) = ParseProblemId(problem);
+        var taskList = problemList.Select(async problem =>
+        {
             var mistake =
                 await dbContext.Mistakes
-                    .Where(m => m.StudentId == studentId && m.AssignmentId == assignmentId && m.ProblemId == problemId)
+                    .Where(m => m.StudentId == studentId && m.AssignmentId == problem.AssignmentId && m.ProblemId == problem.ProblemId)
                     .SingleOrDefaultAsync();
             if (mistake == null)
                 throw new HttpResponseException(StatusCodes.Status400BadRequest,
@@ -155,6 +155,16 @@ public class ReviewController : ControllerBase
         await Task.WhenAll(taskList);
     }
 
+    /// <summary>同步 NjuCsCms 的作业信息</summary>
+    /// <param name="assignmentId">本系统中的作业ID</param>
+    /// <param name="cmsHomeworkId">Cms 中的作业ID</param>
+    [HttpPost]
+    [Route("SyncWithNjuCsCms")]
+    public async Task SyncWithNjuCsCms(int assignmentId, int cmsHomeworkId)
+    {
+        await myAppService.SyncWithNjuCsCms(assignmentId, cmsHomeworkId);
+    }
+
     /// <summary>获取评阅压缩包</summary>
     /// <param name="assignmentId">作业ID</param>
     /// <param name="reviewerId">评阅人ID</param>
@@ -162,14 +172,24 @@ public class ReviewController : ControllerBase
     [HttpGet]
     [Route("Archieve")]
     [Produces("application/octet-stream")]
+    [ProducesResponseType(typeof(byte[]), StatusCodes.Status200OK)]
     public async Task GetReviewAchieve(int assignmentId, int reviewerId)
     {
+        var assignment = await dbContext.Assignments.SingleOrDefaultAsync(x => x.Id == assignmentId);
+        if (assignment == null)
+        {
+            Response.StatusCode = StatusCodes.Status404NotFound;
+            return;
+        }
+
         var attachments =
-            await dbContext.Attachments
+            await dbContext.Attachments.Include(x => x.Submission)
+                .ThenInclude(x => x.Student)
                 .Where(x => x.Submission.AssignmentId == assignmentId && x.Submission.Student.ReviewerId == reviewerId)
                 .ToListAsync();
         var info = attachments
-                       .Select(x => new AttachmentInfo {
+                       .Select(x => new AttachmentInfo
+                       {
                            AttachmentId = x.Id,
                            AttachmentFilename = $"{x.Submission.StudentId}-{x.Submission.Student.Name}--{x.Filename}",
                        })
@@ -178,9 +198,9 @@ public class ReviewController : ControllerBase
         this.Response.StatusCode = 200;
         this.Response.Headers.ContentDisposition = "attachment; filename=\"achieve.zip\"";
         this.Response.Headers.ContentType = "application/octet-stream";
-        var feature = HttpContext.Features.Get<IHttpBodyControlFeature>() !;
+        var feature = HttpContext.Features.Get<IHttpBodyControlFeature>()!;
         feature.AllowSynchronousIO = true;
-        await Task.Run(() => attachmentService.GetArchiveAsync(info, Response.Body));
+        await Task.Run(() => myAppService.GetArchiveAsync(assignmentId, reviewerId, assignment.Name, info, Response.Body));
     }
 }
 
@@ -190,8 +210,8 @@ public class ReviewInfoDTO
     public string? StudentName { get; set; }
     public DateTimeOffset SubmittedAt { get; set; }
     public Grade Grade { get; set; } = Grade.None;
-    public List<string> NeedCorrection { get; set; } = new List<string>();
-    public List<string> HasCorrected { get; set; } = new List<string>();
+    public List<ProblemDTO> NeedCorrection { get; set; } = new();
+    public List<ProblemDTO> HasCorrected { get; set; } = new();
     public string Comment { get; set; } = "";
     public string Track { get; set; } = "";
 }

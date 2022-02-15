@@ -11,8 +11,8 @@ using NjuCsCmsHelper.Models;
 namespace NjuCsCmsHelper.Server.Migrations
 {
     [DbContext(typeof(AppDbContext))]
-    [Migration("20220202063824_AddUniqueIndex")]
-    partial class AddUniqueIndex
+    [Migration("20220215033127_V2")]
+    partial class V2
     {
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
@@ -28,10 +28,17 @@ namespace NjuCsCmsHelper.Server.Migrations
                     b.Property<long>("Deadline")
                         .HasColumnType("INTEGER");
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("TEXT");
+
                     b.Property<int>("NumberOfProblems")
                         .HasColumnType("INTEGER");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
 
                     b.ToTable("Assignments");
                 });
@@ -68,7 +75,7 @@ namespace NjuCsCmsHelper.Server.Migrations
                     b.Property<int?>("CorrectedInId")
                         .HasColumnType("INTEGER");
 
-                    b.Property<int>("MakedInId")
+                    b.Property<int>("MadeInId")
                         .HasColumnType("INTEGER");
 
                     b.Property<int>("ProblemId")
@@ -83,7 +90,7 @@ namespace NjuCsCmsHelper.Server.Migrations
 
                     b.HasIndex("CorrectedInId");
 
-                    b.HasIndex("MakedInId");
+                    b.HasIndex("MadeInId");
 
                     b.HasIndex("StudentId", "AssignmentId", "ProblemId")
                         .IsUnique();
@@ -186,9 +193,9 @@ namespace NjuCsCmsHelper.Server.Migrations
                         .WithMany("HasCorrected")
                         .HasForeignKey("CorrectedInId");
 
-                    b.HasOne("NjuCsCmsHelper.Models.Submission", "MakedIn")
+                    b.HasOne("NjuCsCmsHelper.Models.Submission", "MadeIn")
                         .WithMany("NeedCorrection")
-                        .HasForeignKey("MakedInId")
+                        .HasForeignKey("MadeInId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -202,7 +209,7 @@ namespace NjuCsCmsHelper.Server.Migrations
 
                     b.Navigation("CorrectedIn");
 
-                    b.Navigation("MakedIn");
+                    b.Navigation("MadeIn");
 
                     b.Navigation("Student");
                 });

@@ -7,7 +7,7 @@ public class AppDbContext : DbContext
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         modelBuilder.Entity<Mistake>()
-            .HasOne(mistake => mistake.MakedIn)
+            .HasOne(mistake => mistake.MadeIn)
             .WithMany(submission => submission.NeedCorrection);
         modelBuilder.Entity<Mistake>()
             .HasOne(mistake => mistake.CorrectedIn)
@@ -15,10 +15,10 @@ public class AppDbContext : DbContext
 
         modelBuilder.Entity<Assignment>()
             .Property(assignment => assignment.Deadline)
-            .HasConversion(v => TimeStampHelper.ToUnixTimeMillis(v), v => TimeStampHelper.FromUnixTimeMillsecs(v));
+            .HasConversion(v => v.ToUnixTimeMilliseconds(), v => DateTimeOffset.FromUnixTimeMilliseconds(v));
         modelBuilder.Entity<Submission>()
             .Property(submission => submission.SubmittedAt)
-            .HasConversion(v => TimeStampHelper.ToUnixTimeMillis(v), v => TimeStampHelper.FromUnixTimeMillsecs(v));
+            .HasConversion(v => v.ToUnixTimeMilliseconds(), v => DateTimeOffset.FromUnixTimeMilliseconds(v));
     }
 
     public DbSet<Student> Students { get; set; } = null !;
@@ -27,18 +27,4 @@ public class AppDbContext : DbContext
     public DbSet<Mistake> Mistakes { get; set; } = null !;
     public DbSet<Attachment> Attachments { get; set; } = null !;
     public DbSet<Token> Tokens { get; set; } = null !;
-}
-
-public static class TimeStampHelper
-{
-    public static long ToUnixTimeMillis(DateTimeOffset date)
-    {
-        if (date < DateTimeOffset.UnixEpoch)
-            throw new ArgumentOutOfRangeException($"Date {date} cannot convert to Unix Timestamp");
-        return (long)(date - DateTimeOffset.UnixEpoch).TotalMilliseconds;
-    }
-    public static DateTimeOffset FromUnixTimeMillsecs(long millis)
-    {
-        return DateTimeOffset.UnixEpoch.AddMilliseconds(millis);
-    }
 }

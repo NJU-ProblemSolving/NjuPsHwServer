@@ -13,7 +13,8 @@ builder.Services.AddDbContext<AppDbContext>(
 // Learn more about configuring Swagger/OpenAPI at
 // https://aka.ms/aspnetcore/swashbuckle
 builder.Services.AddEndpointsApiExplorer();
-builder.Services.AddSwaggerGen(c => {
+builder.Services.AddSwaggerGen(c =>
+{
     var xmlFile = $"{typeof(Program).Assembly.GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(xmlPath);
@@ -31,8 +32,12 @@ Func<RedirectContext<CookieAuthenticationOptions>, Task> ReplaceRedirector(
 };
 builder.Services
     .AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme) // Sets the default scheme to cookies
-    .AddCookie(o => {
-        o.Events = new CookieAuthenticationEvents {
+    .AddCookie(o =>
+    {
+        o.ExpireTimeSpan = TimeSpan.FromDays(120);
+        o.SlidingExpiration = true;
+        o.Events = new CookieAuthenticationEvents
+        {
             OnRedirectToLogin = ReplaceRedirector(StatusCodes.Status401Unauthorized, o.Events.OnRedirectToAccessDenied),
             OnRedirectToAccessDenied =
                 ReplaceRedirector(StatusCodes.Status403Forbidden, o.Events.OnRedirectToAccessDenied),
@@ -43,16 +48,12 @@ builder.Services.AddSingleton<IAuthorizationHandler, MyAuthorizationHandler>();
 builder.Services.AddAuthorization();
 
 builder.Services.AddSingleton<IMemoryCache, MemoryCache>();
-builder.Services.AddScoped<IAttachmentService, MyAttachmentService>();
+builder.Services.AddScoped<IMyAppService, MyAppService>();
 
 var app = builder.Build();
 
-// Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
-{
-    app.UseSwagger();
-    app.UseSwaggerUI();
-}
+app.UseSwagger();
+app.UseSwaggerUI();
 
 app.UseFileServer();
 

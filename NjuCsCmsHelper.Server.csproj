@@ -21,7 +21,7 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <TrimmerRootAssembly Include="Microsoft.EntityFrameworkCore" />
+    <ProjectReference Include="..\NjuCsCms\NjuCsCms.csproj" />
   </ItemGroup>
 
 </Project>
