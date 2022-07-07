@@ -2,7 +2,7 @@ namespace NjuCsCmsHelper.Models;
 
 public class AppDbContext : DbContext
 {
-    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) {}
+    public AppDbContext(DbContextOptions<AppDbContext> options) : base(options) { }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -21,10 +21,10 @@ public class AppDbContext : DbContext
             .HasConversion(v => v.ToUnixTimeMilliseconds(), v => DateTimeOffset.FromUnixTimeMilliseconds(v));
     }
 
-    public DbSet<Student> Students { get; set; } = null !;
-    public DbSet<Assignment> Assignments { get; set; } = null !;
-    public DbSet<Submission> Submissions { get; set; } = null !;
-    public DbSet<Mistake> Mistakes { get; set; } = null !;
-    public DbSet<Attachment> Attachments { get; set; } = null !;
-    public DbSet<Token> Tokens { get; set; } = null !;
+    public DbSet<Student> Students { get; set; } = null!;
+    public DbSet<Assignment> Assignments { get; set; } = null!;
+    public DbSet<Submission> Submissions { get; set; } = null!;
+    public DbSet<Mistake> Mistakes { get; set; } = null!;
+    public DbSet<Attachment> Attachments { get; set; } = null!;
+    public DbSet<Token> Tokens { get; set; } = null!;
 }

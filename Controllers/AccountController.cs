@@ -33,7 +33,7 @@ public class AccountController : ControllerBase
 
         var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
         var principal = new ClaimsPrincipal(identity);
-        await HttpContext.SignInAsync(principal);
+        await HttpContext.SignInAsync(principal, new AuthenticationProperties { IsPersistent = true });
 
         return Ok(new { Id = studentId, Name = studentName, IsAdmin = tokenInfo.IsAdmin });
     }

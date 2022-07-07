@@ -6,5 +6,5 @@ public class AppUserClaims
 
 public class AppConfig
 {
-    public const int AttachmentSizeLimit = 3 * 1024 * 1024;
+    public const int AttachmentSizeLimit = 3 * 1024 * 1024;     // 3MB
 }

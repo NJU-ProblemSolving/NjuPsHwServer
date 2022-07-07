@@ -25,29 +25,32 @@ public class SubmissionController : ControllerBase
     /// <summary>提交作业</summary>
     /// <param name="assignmentId">作业ID</param>
     /// <param name="studentId">提交人</param>
+    /// <param name="submittedAt">提交时间</param>
     /// <param name="file">附件</param>
     [HttpPost]
     [Route("Submit")]
     [AllowAnonymous]
-    public async Task<IActionResult> Submit([FromForm] int studentId, [FromForm] int assignmentId,
+    public async Task<IActionResult> Submit([FromForm] int studentId, [FromForm] int assignmentId, [FromForm] DateTimeOffset? submittedAt,
                                             [FromForm] IFormFile file)
     {
         var authorizeResult =
             await authorizationService.AuthorizeAsync(User, studentId, OwnerOrAdminRequirement.Instance);
         if (!authorizeResult.Succeeded) return Unauthorized();
 
-        if (file.Length > AppConfig.AttachmentSizeLimit) return BadRequest("文件过大");
+        if (!User.IsInRole("Admin") && file.Length > AppConfig.AttachmentSizeLimit) return BadRequest("File too big");
 
         if (!await dbContext.Assignments.AnyAsync(a => a.Id == assignmentId)) return NotFound("assignmentId");
         if (!await dbContext.Students.AnyAsync(s => s.Id == studentId)) return NotFound("studentId");
+        if (submittedAt != null && !User.IsInRole("Admin")) return Unauthorized("submittedAt");
 
-        var submission = new Submission {
+        var submission = new Submission
+        {
             StudentId = studentId,
             AssignmentId = assignmentId,
-            SubmittedAt = DateTimeOffset.Now,
+            SubmittedAt = submittedAt ?? DateTimeOffset.Now,
         };
-        await attachmentService.AddSubmissionAsync(submission);
-        await attachmentService.AddAttachmentAsync(submission, file.FileName, file.OpenReadStream());
+        if (await attachmentService.AddSubmissionAsync(submission))
+            await attachmentService.AddAttachmentAsync(submission, file.FileName, file.OpenReadStream());
 
         return Ok();
     }

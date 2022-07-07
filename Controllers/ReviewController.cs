@@ -155,16 +155,6 @@ public class ReviewController : ControllerBase
         await Task.WhenAll(taskList);
     }
 
-    /// <summary>同步 NjuCsCms 的作业信息</summary>
-    /// <param name="assignmentId">本系统中的作业ID</param>
-    /// <param name="cmsHomeworkId">Cms 中的作业ID</param>
-    [HttpPost]
-    [Route("SyncWithNjuCsCms")]
-    public async Task SyncWithNjuCsCms(int assignmentId, int cmsHomeworkId)
-    {
-        await myAppService.SyncWithNjuCsCms(assignmentId, cmsHomeworkId);
-    }
-
     /// <summary>获取评阅压缩包</summary>
     /// <param name="assignmentId">作业ID</param>
     /// <param name="reviewerId">评阅人ID</param>

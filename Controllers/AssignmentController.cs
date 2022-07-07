@@ -50,4 +50,24 @@ public class AssignmentController : ControllerBase
 
         return CreatedAtAction(nameof(Get), new { id = assignment.Id }, assignment);
     }
+
+    /// <summary>更新作业</summary>
+    [HttpPut]
+    [Route("{assignmentId:int}")]
+    [ProducesResponseType(typeof(Assignment), StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> Update(int assignmentId, [FromBody] Assignment assignment)
+    {
+        if (assignment.Id != 0 && assignment.Id != assignmentId) return BadRequest();
+        var assignmentInDb = await dbContext.Assignments.SingleAsync(a => a.Id == assignmentId);
+        if (assignmentInDb == null) return NotFound();
+
+        assignmentInDb.Name = assignment.Name;
+        assignmentInDb.NumberOfProblems = assignment.NumberOfProblems;
+        assignmentInDb.Deadline = assignment.Deadline;
+        await dbContext.SaveChangesAsync();
+
+        return NoContent();
+    }
 }

@@ -32,7 +32,7 @@ public class StudentController : ControllerBase
     {
         if (studentId == null) return BadRequest("Expect student ID");
 
-        var student = await dbContext.Students.Where(student => student.Id == studentId !).SingleOrDefaultAsync();
+        var student = await dbContext.Students.Where(student => student.Id == studentId!).SingleOrDefaultAsync();
         if (student == null) return NotFound("Student ID not found");
 
         return Ok(student.ReviewerId);
@@ -51,9 +51,11 @@ public class StudentController : ControllerBase
         if (!authorizeResult.Succeeded) return Unauthorized();
 
         var submissions = await dbContext.Submissions.Where(submission => submission.StudentId == studentId)
-                              .Select(submission => new SubmissionSummaryDTO {
+                              .Select(submission => new SubmissionSummaryDTO
+                              {
                                   AssignmentId = submission.AssignmentId,
                                   Grade = submission.Grade,
+                                  SubmittedAt = submission.SubmittedAt,
                                   NeedCorrection = submission.NeedCorrection.OrderBy(mistake => mistake.ProblemId)
                                                        .Select(mistake => myAppService.GetProblemDTO(mistake.AssignmentId, mistake.ProblemId).Result)
                                                        .ToList(),
@@ -72,7 +74,8 @@ public class SubmissionSummaryDTO
 {
     public int AssignmentId { get; set; }
     public Grade Grade { get; set; } = Grade.None;
-    public List<ProblemDTO> NeedCorrection { get; set; } = new ();
-    public List<ProblemDTO> HasCorrected { get; set; } = new ();
+    public DateTimeOffset SubmittedAt { get; set; }
+    public List<ProblemDTO> NeedCorrection { get; set; } = new();
+    public List<ProblemDTO> HasCorrected { get; set; } = new();
     public string Comment { get; set; } = "";
 }

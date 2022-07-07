@@ -25,22 +25,24 @@ public class MistakeController : ControllerBase
     [ProducesResponseType(typeof(List<MistakesOfStudent>), StatusCodes.Status201Created)]
     public async Task<IActionResult> Get()
     {
-        var list = await dbContext.Mistakes.Where(m => m.CorrectedIn == null)
+        var list = await dbContext.Mistakes.Where(m => m.CorrectedInId == null)
                        .Select(m => new { m.StudentId, m.AssignmentId, m.ProblemId })
                        .ToListAsync();
-        var res = list.GroupBy(m => m.StudentId)
-                      .Select(g => new MistakesOfStudent { StudentId = g.Key, Mistakes = g.Select(m => myAppService.GetProblemDTO(m.AssignmentId, m.ProblemId).Result).ToList() })
+        var dtos = await Task.WhenAll(list.Select(m => myAppService.GetProblemDTO(m.AssignmentId, m.ProblemId)));
+        var res = list.Zip(dtos).Select(x => new { StudentId = x.First.StudentId, Mistake = x.Second })
+                      .GroupBy(m => m.StudentId)
+                      .Select(g => new MistakesOfStudent { StudentId = g.Key, Mistakes = g.Select(m => m.Mistake).ToList() })
                       .ToList();
         return Ok(res);
     }
 }
 
-    public class ProblemDTO
-    {
-        public int AssignmentId { get; set; }
-        public int ProblemId { get; set; }
-        public string Display { get; set; } = null!;
-    }
+public class ProblemDTO
+{
+    public int AssignmentId { get; set; }
+    public int ProblemId { get; set; }
+    public string Display { get; set; } = null!;
+}
 
 public class MistakesOfStudent
 {

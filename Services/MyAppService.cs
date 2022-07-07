@@ -2,7 +2,6 @@ namespace NjuCsCmsHelper.Services;
 
 using System.IO.Compression;
 using Microsoft.Extensions.Caching.Memory;
-using NjuCsCms;
 using NjuCsCmsHelper.Server.Controllers;
 using NjuCsCmsHelper.Models;
 
@@ -14,7 +13,6 @@ public interface IMyAppService
     Task<bool> AddSubmissionAsync(Submission submission);
     Task AddAttachmentAsync(Submission submission, string filename, Stream attachmentStream);
     Task GetArchiveAsync(int assignmentId, int reviewerId, string assignmentName, IEnumerable<AttachmentInfo> attachmentList, Stream outStream);
-    Task SyncWithNjuCsCms(int assignmentId, int cmsHomeworkId);
 }
 
 public class AttachmentInfo
@@ -81,6 +79,10 @@ public class MyAppService : IMyAppService
         };
         await dbContext.Attachments.AddAsync(attachment);
         await dbContext.SaveChangesAsync();
+        if (!Directory.Exists("attachments"))
+        {
+            Directory.CreateDirectory("attachments");
+        }
         using var file = File.Create($"attachments/{attachment.Id}");
         await attachmentStream.CopyToAsync(file);
     }
@@ -90,46 +92,27 @@ public class MyAppService : IMyAppService
         using var zipStream = new ZipArchive(outStream, ZipArchiveMode.Create, true);
 
         {
-            var entry = zipStream.CreateEntry("send.py");
-            var script = await File.ReadAllTextAsync($"send.py");
+            var entry = zipStream.CreateEntry($"{assignmentName}/send.py");
+            var script = await File.ReadAllTextAsync($"Assets/SendMail/send.py");
             script = script.Replace("#$reviewerId", reviewerId.ToString());
             script = script.Replace("#$assignmentId", assignmentId.ToString());
-            script = script.Replace("#$assignmentName", assignmentName);
+            script = script.Replace("#$assignmentName", $"\"{assignmentName}\"");
             using var entryStream = entry.Open();
             await entryStream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(script));
         }
         {
-            var entry = zipStream.CreateEntry("sendconfig.json");
-            using var file = File.OpenRead($"sendconfig.json");
+            var entry = zipStream.CreateEntry($"{assignmentName}/sendconfig.json");
+            using var file = File.OpenRead($"Assets/SendMail/sendconfig.json");
             using var entryStream = entry.Open();
             await file.CopyToAsync(entryStream);
         }
 
         foreach (var attachmentInfo in attachmentList)
         {
-            var entry = zipStream.CreateEntry(attachmentInfo.AttachmentFilename);
+            var entry = zipStream.CreateEntry($"{assignmentName}/attachmentInfo.AttachmentFilename");
             using var file = File.OpenRead($"attachments/{attachmentInfo.AttachmentId}");
             using var entryStream = entry.Open();
             await file.CopyToAsync(entryStream);
-        }
-    }
-
-    public async Task SyncWithNjuCsCms(int assignmentId, int cmsHomeworkId)
-    {
-        var cms = await NjuCsCms.LoginAsync(configuration["NjuCsCms:username"], configuration["NjuCsCms:password"]);
-        await foreach (var submissionInfo in cms.GetSubmissions(cmsHomeworkId))
-        {
-            var submission = new Submission
-            {
-                AssignmentId = assignmentId,
-                StudentId = submissionInfo.StudentId,
-                SubmittedAt = submissionInfo.SubmittedAt,
-            };
-            if (!await AddSubmissionAsync(submission)) continue;
-            foreach (var attachment in submissionInfo.AttachmentInfos)
-            {
-                await AddAttachmentAsync(submission, attachment.Name, await cms.Get(attachment.Url));
-            }
         }
     }
 }

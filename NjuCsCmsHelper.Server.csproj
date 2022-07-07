@@ -20,8 +20,13 @@
     <NoWarn>$(NoWarn);1591</NoWarn>
   </PropertyGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\NjuCsCms\NjuCsCms.csproj" />
-  </ItemGroup>
+  <Target Name="AfterBuild">
+    <ItemGroup>
+      <AssetFolder Include="Assets/**/*" />
+    </ItemGroup>
+    <Copy SourceFiles="@(AssetFolder)"
+          DestinationFiles="$(OutputPath)/%(RecursiveDir)%(Filename)%(Extension)"
+          SkipUnchangedFiles="True" />
+  </Target>
 
 </Project>
