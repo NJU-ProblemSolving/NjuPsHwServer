@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  labels:
+    app: server
+  name: server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: server
+  serviceName: server
+  template:
+    metadata:
+      labels:
+        app: server
+    spec:
+      containers:
+        - image: undefined01/njupshwserver
+          name: server
+          volumeMounts:
+            - mountPath: /app/data/
+              name: server-data
+  volumeClaimTemplates:
+    - metadata:
+        name: server-data
+      spec:
+        accessModes:
+          - ReadWriteOnce
+        resources:
+          requests:
+            storage: 10Mi
+        storageClassName: local-storage
