@@ -35,7 +35,7 @@ public class AccountController : ControllerBase
         var principal = new ClaimsPrincipal(identity);
         await HttpContext.SignInAsync(principal, new AuthenticationProperties { IsPersistent = true });
 
-        return Ok(new { Id = studentId, Name = studentName, IsAdmin = tokenInfo.IsAdmin });
+        return Ok(new { Id = studentId, Name = studentName, tokenInfo.IsAdmin });
     }
 
     [HttpGet]

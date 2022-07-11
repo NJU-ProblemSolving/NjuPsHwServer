@@ -51,7 +51,7 @@ public class AssignmentController : ControllerBase
         return CreatedAtAction(nameof(Get), new { id = assignment.Id }, assignment);
     }
 
-    /// <summary>更新作业</summary>
+    /// <summary>更新作业信息</summary>
     [HttpPut]
     [Route("{assignmentId:int}")]
     [ProducesResponseType(typeof(Assignment), StatusCodes.Status204NoContent)]

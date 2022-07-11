@@ -1,7 +1,5 @@
 ﻿namespace NjuCsCmsHelper.Server.Controllers;
 
-using System.Text.RegularExpressions;
-using Microsoft.AspNetCore.Http.Features;
 using Services;
 using Models;
 
@@ -14,16 +12,16 @@ public class ReviewController : ControllerBase
     private readonly AppDbContext dbContext;
     private readonly IAuthorizationService authorizationService;
     private readonly IMyAppService myAppService;
-
-    private static readonly Regex ProblemNameRegex = new(@"(\d+)-(\d+)");
+    private readonly SubmissionService submissionService;
 
     public ReviewController(ILogger<ReviewController> logger, AppDbContext dbContext,
-                            IAuthorizationService authorizationService, IMyAppService myAppService)
+                            IAuthorizationService authorizationService, IMyAppService myAppService, SubmissionService submissionService)
     {
         this.logger = logger;
         this.dbContext = dbContext;
         this.authorizationService = authorizationService;
         this.myAppService = myAppService;
+        this.submissionService = submissionService;
     }
 
     /// <summary>获取评阅结果</summary>
@@ -34,8 +32,8 @@ public class ReviewController : ControllerBase
     [ProducesResponseType(typeof(List<ReviewInfoDTO>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Get(int assignmentId, int? reviewerId)
     {
-        var assignment = await GetAssignment(assignmentId);
-        if (assignment == null) return NotFound("Assignment ID not exists");
+        if (await GetAssignment(assignmentId) == null)
+            return NotFound("Assignment ID not exists");
 
         var submissions = dbContext.Submissions.Where(submission => submission.AssignmentId == assignmentId);
         if (reviewerId != null)
@@ -49,15 +47,21 @@ public class ReviewController : ControllerBase
                             SubmittedAt = submission.SubmittedAt,
                             Grade = submission.Grade,
                             NeedCorrection = submission.NeedCorrection.OrderBy(m => m.AssignmentId).ThenBy(m => m.ProblemId)
-                                                 .Select(m => myAppService.GetProblemDTO(m).Result)
+                                                 .Select(m => new ProblemDTO { AssignmentId = m.AssignmentId, ProblemId = m.ProblemId })
                                                  .ToList(),
                             HasCorrected =
-                                submission.HasCorrected.OrderBy(m => m.AssignmentId).ThenBy(m => m.ProblemId).Select(m => myAppService.GetProblemDTO(m).Result)
+                                submission.HasCorrected.OrderBy(m => m.AssignmentId).ThenBy(m => m.ProblemId).Select(m => new ProblemDTO { AssignmentId = m.AssignmentId, ProblemId = m.ProblemId })
                                     .ToList(),
                             Comment = submission.Comment,
                             Track = submission.Track,
                         })
                         .ToListAsync();
+
+        foreach (var info in infos)
+        {
+            info.NeedCorrection.ForEach(x => myAppService.FillProblemDTO(x));
+            info.HasCorrected.ForEach(x => myAppService.FillProblemDTO(x));
+        }
 
         return Ok(infos);
     }
@@ -100,12 +104,9 @@ public class ReviewController : ControllerBase
         return Ok();
     }
 
-    private Task<bool> IsAssignmentIdExists(int assignmentId) => dbContext.Assignments.AnyAsync(a => a.Id ==
-                                                                                                     assignmentId);
-    private Task<Assignment?> GetAssignment(int assignmentId) => dbContext.Assignments.SingleOrDefaultAsync(a => a.Id ==
-                                                                                                     assignmentId);
-    private Task<Assignment?> GetAssignment(string assignmentName) => dbContext.Assignments.SingleOrDefaultAsync(a => a.Name ==
-                                                                                                     assignmentName);
+    private Task<bool> IsAssignmentIdExists(int assignmentId) => dbContext.Assignments.AnyAsync(a => a.Id == assignmentId);
+    private Task<Assignment?> GetAssignment(int assignmentId) => dbContext.Assignments.SingleOrDefaultAsync(a => a.Id == assignmentId);
+    private Task<Assignment?> GetAssignment(string assignmentName) => dbContext.Assignments.SingleOrDefaultAsync(a => a.Name == assignmentName);
     private Task<bool> IsStudentIdExists(int studentId) => dbContext.Students.AnyAsync(s => s.Id == studentId);
 
     private async Task SetMistake(ICollection<ProblemDTO> problemList, int studentId, Submission submission)
@@ -158,39 +159,29 @@ public class ReviewController : ControllerBase
     /// <summary>获取评阅压缩包</summary>
     /// <param name="assignmentId">作业ID</param>
     /// <param name="reviewerId">评阅人ID</param>
-    /// <returns>包含需批改的作业、结果发送脚本的 zip 压缩包</returns>
+    /// <returns>压缩包包含需批改的作业、发送反馈邮件的脚本。</returns>
     [HttpGet]
     [Route("Archieve")]
     [Produces("application/octet-stream")]
     [ProducesResponseType(typeof(byte[]), StatusCodes.Status200OK)]
-    public async Task GetReviewAchieve(int assignmentId, int reviewerId)
+    public async Task<IActionResult> GetReviewAchieve(int assignmentId, int reviewerId)
     {
         var assignment = await dbContext.Assignments.SingleOrDefaultAsync(x => x.Id == assignmentId);
         if (assignment == null)
-        {
-            Response.StatusCode = StatusCodes.Status404NotFound;
-            return;
-        }
+            return NotFound("Assignment not exists");
 
         var attachments =
-            await dbContext.Attachments.Include(x => x.Submission)
-                .ThenInclude(x => x.Student)
+            await dbContext.Attachments
                 .Where(x => x.Submission.AssignmentId == assignmentId && x.Submission.Student.ReviewerId == reviewerId)
-                .ToListAsync();
-        var info = attachments
-                       .Select(x => new AttachmentInfo
-                       {
-                           AttachmentId = x.Id,
-                           AttachmentFilename = $"{x.Submission.StudentId}-{x.Submission.Student.Name}--{x.Filename}",
-                       })
-                       .ToList();
+                .Select(x => new AttachmentInfo
+                {
+                    AttachmentId = x.Id,
+                    AttachmentFilename = $"{x.Submission.StudentId}-{x.Submission.Student.Name}--{x.Filename}",
+                }).ToListAsync();
 
-        this.Response.StatusCode = 200;
-        this.Response.Headers.ContentDisposition = "attachment; filename=\"achieve.zip\"";
-        this.Response.Headers.ContentType = "application/octet-stream";
-        var feature = HttpContext.Features.Get<IHttpBodyControlFeature>()!;
-        feature.AllowSynchronousIO = true;
-        await Task.Run(() => myAppService.GetArchiveAsync(assignmentId, reviewerId, assignment.Name, info, Response.Body));
+        var pipe = new System.IO.Pipelines.Pipe();
+        await submissionService.GetArchiveAsync(assignmentId, reviewerId, assignment.Name, attachments, pipe.Writer.AsStream());
+        return File(pipe.Reader.AsStream(), "application/octet-stream", $"{assignment.Name}.zip");
     }
 }
 

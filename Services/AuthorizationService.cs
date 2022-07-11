@@ -1,8 +1,8 @@
-namespace NjuCsCmsHelper.Services;
+namespace NjuCsCmsHelper.Server.Services;
 
 public class OwnerOrAdminRequirement : IAuthorizationRequirement
 {
-    public static OwnerOrAdminRequirement Instance = new OwnerOrAdminRequirement();
+    public static OwnerOrAdminRequirement Instance = new();
 }
 
 public class MyAuthorizationHandler : AuthorizationHandler<OwnerOrAdminRequirement, int>

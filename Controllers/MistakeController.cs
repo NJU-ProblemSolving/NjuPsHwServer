@@ -26,11 +26,11 @@ public class MistakeController : ControllerBase
     public async Task<IActionResult> Get()
     {
         var list = await dbContext.Mistakes.Where(m => m.CorrectedInId == null)
-                       .Select(m => new { m.StudentId, m.AssignmentId, m.ProblemId })
+                       .Select(m => new { m.StudentId, Mistake = new ProblemDTO { AssignmentId = m.AssignmentId, ProblemId = m.ProblemId } })
                        .ToListAsync();
-        var dtos = await Task.WhenAll(list.Select(m => myAppService.GetProblemDTO(m.AssignmentId, m.ProblemId)));
-        var res = list.Zip(dtos).Select(x => new { StudentId = x.First.StudentId, Mistake = x.Second })
-                      .GroupBy(m => m.StudentId)
+        foreach (var item in list)
+            await myAppService.FillProblemDTO(item.Mistake);
+        var res = list.GroupBy(m => m.StudentId)
                       .Select(g => new MistakesOfStudent { StudentId = g.Key, Mistakes = g.Select(m => m.Mistake).ToList() })
                       .ToList();
         return Ok(res);

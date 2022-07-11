@@ -3,9 +3,8 @@
 ##
 ## Get latest from https://github.com/github/gitignore/blob/master/VisualStudio.gitignore
 
-attachments
-wwwroot
-sqlite.db
+/data
+/wwwroot
 
 # User-specific files
 *.rsuser

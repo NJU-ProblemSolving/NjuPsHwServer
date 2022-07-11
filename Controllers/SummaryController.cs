@@ -29,6 +29,7 @@ public class SummaryController : ControllerBase
         }
     }
 
+    /// <summary>期末汇总成绩</summary>
     [HttpGet]
     public async Task<IActionResult> GetSummary([FromQuery] List<int> exceptionList)
     {
@@ -55,8 +56,8 @@ public class SummaryController : ControllerBase
                     await dbContext.Submissions.Where(x => x.StudentId == student.Id && x.AssignmentId == assignmentId)
                         .Select(x => new
                         {
-                            Grade = x.Grade,
-                            SubmittedAt = x.SubmittedAt,
+                            x.Grade,
+                            x.SubmittedAt,
                             Corrected = x.NeedCorrection.Where(y => y.CorrectedIn != null).Count(),
                             Total = x.NeedCorrection.Count(),
                         })
