@@ -1,4 +1,5 @@
 using Microsoft.Extensions.Caching.Memory;
+
 using NjuCsCmsHelper.Models;
 using NjuCsCmsHelper.Server.Services;
 
@@ -36,6 +37,22 @@ builder.Services
     {
         o.ExpireTimeSpan = TimeSpan.FromDays(365);
         o.SlidingExpiration = true;
+    })
+    .AddOpenIdConnect("oidc", options =>
+    {
+        options.Authority = builder.Configuration["OpenIdConnect:Authority"];
+        options.RequireHttpsMetadata = builder.Configuration.GetValue<bool>("OpenIdConnect:RequireHttpsMetadata");
+
+        options.ClientId = builder.Configuration["OpenIdConnect:ClientId"];
+        options.ClientSecret = builder.Configuration["OpenIdConnect:ClientSecret"];
+        options.ResponseType = "code";
+
+        options.SaveTokens = true;
+        options.Scope.Add("studentInfo");
+        options.GetClaimsFromUserInfoEndpoint = builder.Configuration.GetValue<bool>("OpenIdConnect:RequireHttpsMetadata");
+        
+        options.ClaimActions.MapJsonKey("studentId", "studentId");
+        options.ClaimActions.MapJsonKey("role", "role");
     });
 
 builder.Services.AddSingleton<IAuthorizationHandler, MyAuthorizationHandler>();

@@ -44,4 +44,25 @@ public class AccountController : ControllerBase
         await HttpContext.SignOutAsync();
         return Ok();
     }
+
+    [HttpGet]
+    [AllowAnonymous]
+    public async Task<IActionResult> LoginOpenId()
+    {
+        var auth = await HttpContext.AuthenticateAsync("oidc");
+        if (auth.Succeeded)
+        {
+            var claims = auth.Principal.Claims;
+            return Ok(claims.Select(x => $"{x.Type}:{x.Value}"));
+        }
+        
+        return Challenge("oidc");
+
+    }
+
+    [HttpGet]
+    public IActionResult Claims()
+    {
+        return Ok(User.Claims);
+    }
 }
