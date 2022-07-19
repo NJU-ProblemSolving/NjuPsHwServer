@@ -4,7 +4,7 @@ using Models;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Admin")]
+[Authorize]
 public class AssignmentController : ControllerBase
 {
     private readonly ILogger<AssignmentController> logger;
@@ -18,7 +18,6 @@ public class AssignmentController : ControllerBase
 
     /// <summary>获取所有作业的信息</summary>
     [HttpGet]
-    [AllowAnonymous]
     [ProducesResponseType(typeof(List<Assignment>), StatusCodes.Status200OK)]
     public async Task<IActionResult> Get() { return Ok(await dbContext.Assignments.ToListAsync()); }
 
@@ -38,6 +37,7 @@ public class AssignmentController : ControllerBase
 
     /// <summary>新建作业</summary>
     [HttpPost]
+    [Authorize("Admin")]
     [ProducesResponseType(typeof(Assignment), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status409Conflict)]
     public async Task<IActionResult> Create([FromBody] Assignment assignment)
@@ -53,6 +53,7 @@ public class AssignmentController : ControllerBase
 
     /// <summary>更新作业信息</summary>
     [HttpPut]
+    [Authorize("Admin")]
     [Route("{assignmentId:int}")]
     [ProducesResponseType(typeof(Assignment), StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]

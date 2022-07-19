@@ -5,7 +5,6 @@ using Services;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize]
 public class MistakeController : ControllerBase
 {
     private readonly ILogger<MistakeController> logger;
@@ -21,7 +20,7 @@ public class MistakeController : ControllerBase
 
     /// <summary>获取所有人未订正的错题信息</summary>
     [HttpGet]
-    [Authorize(Roles = "Admin")]
+    [Authorize("Reviewer")]
     [ProducesResponseType(typeof(List<MistakesOfStudent>), StatusCodes.Status201Created)]
     public async Task<IActionResult> Get()
     {

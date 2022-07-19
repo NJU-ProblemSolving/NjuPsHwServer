@@ -5,7 +5,7 @@ using Models;
 
 [Route("api/[controller]")]
 [ApiController]
-[Authorize(Roles = "Admin")]
+[Authorize("Reviewer")]
 public class ReviewController : ControllerBase
 {
     private readonly ILogger<ReviewController> logger;

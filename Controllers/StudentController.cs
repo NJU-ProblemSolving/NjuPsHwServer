@@ -30,7 +30,7 @@ public class StudentController : ControllerBase
     /// <summary>新建学生用户</summary>
     [HttpPost]
     [Route("Create")]
-    [Authorize(Roles = "Admin")]
+    [Authorize("Admin")]
     [ProducesResponseType(typeof(Student), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create([FromBody] Student student)
     {
@@ -42,7 +42,7 @@ public class StudentController : ControllerBase
     /// <summary>获取学生信息</summary>
     [HttpGet]
     [Route("")]
-    [AllowAnonymous]
+    [Authorize("Admin")]
     [ProducesResponseType(typeof(Student), StatusCodes.Status200OK)]
     public async Task<IActionResult> Get(int? studentId)
     {
@@ -56,8 +56,8 @@ public class StudentController : ControllerBase
 
     /// <summary>重置 Token 并发送邮件</summary>
     [HttpPost]
-    [Route("ResetToken")]
     [AllowAnonymous]
+    [Route("ResetToken")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     public async Task<IActionResult> ResetToken(int studentId)
     {
@@ -107,7 +107,7 @@ public class StudentController : ControllerBase
     [HttpPost]
     [Route("Submit")]
     [Consumes("multipart/form-data")]
-    [AllowAnonymous]
+    [Authorize]
     public async Task<IActionResult> Submit(int studentId, [FromForm] int assignmentId, [FromForm] DateTimeOffset? submittedAt,
                                             IFormFile file)
     {
@@ -135,6 +135,7 @@ public class StudentController : ControllerBase
 
     /// <summary>获取某个学生的作业情况汇总</summary>
     [HttpGet]
+    [Authorize]
     [Route("SubmissionSummary")]
     [ProducesResponseType(typeof(List<SubmissionSummaryDTO>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetSubmissionSummary(int? studentId)

@@ -6,8 +6,7 @@ using NjuCsCmsHelper.Models;
 
 public interface IMyAppService
 {
-    Task<string?> GetAssignmentNameById(int assignmentId);
-    // Task<ProblemDTO> GetProblemDTO(Mistake mistake);
+    Task<string> GetAssignmentNameById(int assignmentId);
     Task<ProblemDTO> GetProblemDTO(int assignmentId, int problemId);
     Task FillProblemDTO(ProblemDTO problem);
 }
@@ -31,13 +30,14 @@ public class MyAppService : IMyAppService
         this.cache = cache;
     }
 
-    public async Task<string?> GetAssignmentNameById(int assignmentId)
+    public async Task<string> GetAssignmentNameById(int assignmentId)
     {
         if (!cache.TryGetValue($"AssignmentId-{assignmentId}", out string? assignmentName))
         {
             assignmentName = await dbContext.Assignments.Where(x => x.Id == assignmentId).Select(x => x.Name).SingleOrDefaultAsync();
             cache.Set($"AssignmentId-{assignmentId}", assignmentName);
         }
+        if (assignmentName == null) throw new KeyNotFoundException($"Assignment ID {assignmentId} not found");
         return assignmentName;
     }
 

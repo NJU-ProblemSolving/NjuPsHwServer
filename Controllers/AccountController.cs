@@ -1,5 +1,7 @@
 namespace NjuCsCmsHelper.Server.Controllers;
 
+using Microsoft.AspNetCore.Authentication.Cookies;
+
 using Models;
 
 [Route("api/[controller]/[action]")]
@@ -27,7 +29,7 @@ public class AccountController : ControllerBase
         var studentName = tokenInfo.Student.Name;
         var claims = new List<Claim> {
             new Claim(AppUserClaims.StudentId, studentId.ToString()),
-            new Claim(AppUserClaims.Name, studentName),
+            new Claim(AppUserClaims.studentName, studentName),
         };
         if (tokenInfo.IsAdmin) claims.Add(new Claim(ClaimTypes.Role, "Admin"));
 
@@ -47,17 +49,34 @@ public class AccountController : ControllerBase
 
     [HttpGet]
     [AllowAnonymous]
-    public async Task<IActionResult> LoginOpenId()
+    public async Task<IActionResult> LoginJwt()
     {
-        var auth = await HttpContext.AuthenticateAsync("oidc");
-        if (auth.Succeeded)
-        {
-            var claims = auth.Principal.Claims;
-            return Ok(claims.Select(x => $"{x.Type}:{x.Value}"));
-        }
-        
-        return Challenge("oidc");
+        var res = await HttpContext.AuthenticateAsync("jwt");
+        if (!res.Succeeded || res.Principal == null)
+            return Unauthorized();
+        HttpContext.User = res.Principal;
 
+        var studentId = res.Principal.Claims.SingleOrDefault(x => x.Type == AppUserClaims.StudentId);
+        if (studentId is null)
+            return BadRequest("Jwt contains no studentId");
+
+        var studentName = res.Principal.Claims.SingleOrDefault(x => x.Type == AppUserClaims.studentName);
+        if (studentName is null)
+            return BadRequest("Jwt contains no studentName");
+
+        var claims = new List<Claim> {
+            new Claim(AppUserClaims.StudentId, studentId.Value.ToString()),
+            new Claim(AppUserClaims.studentName, studentName.Value),
+        };
+
+        var isAdmin = res.Principal.IsInRole("Admin");
+        if (isAdmin) claims.Add(new Claim(ClaimTypes.Role, "Admin"));
+
+        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
+        var principal = new ClaimsPrincipal(identity);
+        await HttpContext.SignInAsync(principal, new AuthenticationProperties { IsPersistent = true });
+
+        return Ok(new { Id = studentId.Value, Name = studentName.Value, IsAdmin = isAdmin });
     }
 
     [HttpGet]

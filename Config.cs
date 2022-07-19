@@ -1,6 +1,6 @@
 public class AppUserClaims
 {
-    public const string Name = "name";
+    public const string studentName = "studentName";
     public const string StudentId = "studentId";
 }
 
