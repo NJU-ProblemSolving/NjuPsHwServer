@@ -55,7 +55,7 @@ public class StudentController : ControllerBase
     }
 
     /// <summary>重置 Token 并发送邮件</summary>
-    [HttpGet]
+    [HttpPost]
     [Route("ResetToken")]
     [AllowAnonymous]
     [ProducesResponseType(StatusCodes.Status200OK)]
@@ -163,6 +163,7 @@ public class StudentController : ControllerBase
                               .ToListAsync();
         foreach (var s in submissions)
         {
+            s.AssignmentName = await myAppService.GetAssignmentNameById(s.AssignmentId);
             s.NeedCorrection.ForEach(x => myAppService.FillProblemDTO(x));
             s.HasCorrected.ForEach(x => myAppService.FillProblemDTO(x));
         }
@@ -173,6 +174,7 @@ public class StudentController : ControllerBase
 public class SubmissionSummaryDTO
 {
     public int AssignmentId { get; set; }
+    public string AssignmentName { get; set; } = "";
     public Grade Grade { get; set; } = Grade.None;
     public DateTimeOffset SubmittedAt { get; set; }
     public List<ProblemDTO> NeedCorrection { get; set; } = new();

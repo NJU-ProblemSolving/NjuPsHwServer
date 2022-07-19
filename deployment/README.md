@@ -4,11 +4,21 @@
 
 安装 `kubernetes` 。可通过 `curl -sfL https://get.k3s.io | sh -` 快速安装。
 
-修改 `pv.yml` 挂载路径和最后一行部署主机的名称。在挂载路径中放入 `appsettings.json`（参考 `data/appsettings.json`） 和 `sqlite.db`。主机名称可通过 `kubectl get node` 查看。
+准备数据目录。在目录中放入 `appsettings.json`（可参考 `data/appsettings.json`） 和 `sqlite.db`。
+
+修改 `pv.yml` 中 `/spec/local/path` 指定的挂载路径为准备好的数据目录。修改最后一行为部署主机的名称。主机名称可通过 `kubectl get node` 查看。
 
 应用 `pv.yml` ，以启用一个 `local` 持久卷。
 
 应用 `storageClass.yml` ，以启用 `local-storage` 类。
+
+**可选**
+
+设置 `tls` 证书，用于为 `ingress` 配置 `https`。
+域名的证书可通过 `acme.sh` 自动获取并刷新。
+获取证书后可通过 `kubectl create secret tls tls -n njupshw --cert ../cert/hw.pem --key ../cert/hw.key` 导入。
+
+修改 `ingress.yml` 中域名信息并应用，以使用 `ingress` 对外提供服务。
 
 #### 启动
 
