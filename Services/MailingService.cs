@@ -1,10 +1,9 @@
 namespace NjuCsCmsHelper.Server.Services;
 
-using NjuCsCmsHelper.Models;
-
+using MailKit.Net.Smtp;
 using Microsoft.Extensions.Caching.Memory;
 using MimeKit;
-using MailKit.Net.Smtp;
+using NjuCsCmsHelper.Models;
 
 public class MailingService
 {
@@ -45,13 +44,11 @@ public class MailingService
 
         try
         {
-            using (var client = new SmtpClient())
-            {
-                await client.ConnectAsync(smtpConfig["Host"]);
-                await client.AuthenticateAsync(smtpConfig["Username"], smtpConfig["Password"]);
-                await client.SendAsync(message);
-                await client.DisconnectAsync(true);
-            }
+            using var client = new SmtpClient();
+            await client.ConnectAsync(smtpConfig["Host"]);
+            await client.AuthenticateAsync(smtpConfig["Username"], smtpConfig["Password"]);
+            await client.SendAsync(message);
+            await client.DisconnectAsync(true);
         }
         catch (Exception ex)
         {

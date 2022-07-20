@@ -1,7 +1,7 @@
-﻿namespace NjuCsCmsHelper.Server.Controllers;
+namespace NjuCsCmsHelper.Server.Controllers;
 
-using Services;
 using Models;
+using Services;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -10,16 +10,13 @@ public class ReviewController : ControllerBase
 {
     private readonly ILogger<ReviewController> logger;
     private readonly AppDbContext dbContext;
-    private readonly IAuthorizationService authorizationService;
     private readonly IMyAppService myAppService;
     private readonly SubmissionService submissionService;
 
-    public ReviewController(ILogger<ReviewController> logger, AppDbContext dbContext,
-                            IAuthorizationService authorizationService, IMyAppService myAppService, SubmissionService submissionService)
+    public ReviewController(ILogger<ReviewController> logger, AppDbContext dbContext, IMyAppService myAppService, SubmissionService submissionService)
     {
         this.logger = logger;
         this.dbContext = dbContext;
-        this.authorizationService = authorizationService;
         this.myAppService = myAppService;
         this.submissionService = submissionService;
     }
@@ -106,8 +103,6 @@ public class ReviewController : ControllerBase
 
     private Task<bool> IsAssignmentIdExists(int assignmentId) => dbContext.Assignments.AnyAsync(a => a.Id == assignmentId);
     private Task<Assignment?> GetAssignment(int assignmentId) => dbContext.Assignments.SingleOrDefaultAsync(a => a.Id == assignmentId);
-    private Task<Assignment?> GetAssignment(string assignmentName) => dbContext.Assignments.SingleOrDefaultAsync(a => a.Name == assignmentName);
-    private Task<bool> IsStudentIdExists(int studentId) => dbContext.Students.AnyAsync(s => s.Id == studentId);
 
     private async Task SetMistake(ICollection<ProblemDTO> problemList, int studentId, Submission submission)
     {

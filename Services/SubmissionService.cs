@@ -1,7 +1,7 @@
 namespace NjuCsCmsHelper.Server.Services;
 
-using NjuCsCmsHelper.Models;
 using System.IO.Compression;
+using NjuCsCmsHelper.Models;
 
 public class SubmissionService
 {
@@ -75,8 +75,8 @@ public class SubmissionService
         {
             var entry = zipStream.CreateEntry($"{assignmentName}/send.py");
             var script = await File.ReadAllTextAsync($"Assets/SendMail/send.py");
-            script = script.Replace("#$reviewerId", reviewerId.ToString());
-            script = script.Replace("#$assignmentId", assignmentId.ToString());
+            script = script.Replace("#$reviewerId", reviewerId.ToString(NumberFormatInfo.InvariantInfo));
+            script = script.Replace("#$assignmentId", assignmentId.ToString(NumberFormatInfo.InvariantInfo));
             script = script.Replace("#$assignmentName", $"\"{assignmentName}\"");
             using var entryStream = entry.Open();
             await entryStream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(script));

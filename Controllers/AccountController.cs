@@ -28,8 +28,8 @@ public class AccountController : ControllerBase
         var studentId = tokenInfo.StudentId;
         var studentName = tokenInfo.Student.Name;
         var claims = new List<Claim> {
-            new Claim(AppUserClaims.StudentId, studentId.ToString()),
-            new Claim(AppUserClaims.studentName, studentName),
+            new Claim(AppUserClaims.StudentId, studentId.ToString(NumberFormatInfo.InvariantInfo)),
+            new Claim(AppUserClaims.StudentName, studentName),
         };
         if (tokenInfo.IsAdmin) claims.Add(new Claim(ClaimTypes.Role, "Admin"));
 
@@ -54,19 +54,19 @@ public class AccountController : ControllerBase
         var res = await HttpContext.AuthenticateAsync("jwt");
         if (!res.Succeeded || res.Principal == null)
             return Unauthorized();
-        HttpContext.User = res.Principal;
+        this.HttpContext.User = res.Principal;
 
         var studentId = res.Principal.Claims.SingleOrDefault(x => x.Type == AppUserClaims.StudentId);
         if (studentId is null)
             return BadRequest("Jwt contains no studentId");
 
-        var studentName = res.Principal.Claims.SingleOrDefault(x => x.Type == AppUserClaims.studentName);
+        var studentName = res.Principal.Claims.SingleOrDefault(x => x.Type == AppUserClaims.StudentName);
         if (studentName is null)
             return BadRequest("Jwt contains no studentName");
 
         var claims = new List<Claim> {
             new Claim(AppUserClaims.StudentId, studentId.Value.ToString()),
-            new Claim(AppUserClaims.studentName, studentName.Value),
+            new Claim(AppUserClaims.StudentName, studentName.Value),
         };
 
         var isAdmin = res.Principal.IsInRole("Admin");

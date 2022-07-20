@@ -1,7 +1,7 @@
 namespace NjuCsCmsHelper.Server.Controllers;
 
-using Services;
 using Models;
+using Services;
 
 [Route("api/[controller]/{studentId:int?}")]
 [ApiController]
@@ -34,6 +34,8 @@ public class StudentController : ControllerBase
     [ProducesResponseType(typeof(Student), StatusCodes.Status201Created)]
     public async Task<IActionResult> Create([FromBody] Student student)
     {
+        if (student is null) throw new ArgumentNullException(nameof(student));
+
         await dbContext.Students.AddAsync(student);
         await dbContext.SaveChangesAsync();
         return CreatedAtAction(nameof(Get), new { studentId = student.Id }, student);
@@ -146,21 +148,25 @@ public class StudentController : ControllerBase
             await authorizationService.AuthorizeAsync(User, studentId, OwnerOrAdminRequirement.Instance);
         if (!authorizeResult.Succeeded) return Unauthorized();
 
-        var submissions = await dbContext.Submissions.Where(submission => submission.StudentId == studentId)
-                              .Select(submission => new SubmissionSummaryDTO
-                              {
-                                  AssignmentId = submission.AssignmentId,
-                                  Grade = submission.Grade,
-                                  SubmittedAt = submission.SubmittedAt,
-                                  NeedCorrection = submission.NeedCorrection.OrderBy(mistake => mistake.ProblemId)
-                                                    .Select(m => new ProblemDTO { AssignmentId = m.AssignmentId, ProblemId = m.ProblemId })
-                                                    .ToList(),
-                                  HasCorrected = submission.HasCorrected.OrderBy(mistake => mistake.AssignmentId)
-                                                     .ThenBy(mistake => mistake.ProblemId)
-                                                    .Select(m => new ProblemDTO { AssignmentId = m.AssignmentId, ProblemId = m.ProblemId })
-                                                     .ToList(),
-                                  Comment = submission.Comment,
-                              })
+        var submissions = await dbContext.Submissions
+            .Where(submission => submission.StudentId == studentId)
+            .OrderBy(submission => submission.AssignmentId)
+            .Select(submission => new SubmissionSummaryDTO
+            {
+                AssignmentId = submission.AssignmentId,
+                Grade = submission.Grade,
+                SubmittedAt = submission.SubmittedAt,
+                NeedCorrection = submission.NeedCorrection
+                    .OrderBy(mistake => mistake.ProblemId)
+                    .Select(m => new ProblemDTO { AssignmentId = m.AssignmentId, ProblemId = m.ProblemId })
+                    .ToList(),
+                HasCorrected = submission.HasCorrected
+                    .OrderBy(mistake => mistake.AssignmentId)
+                    .ThenBy(mistake => mistake.ProblemId)
+                    .Select(m => new ProblemDTO { AssignmentId = m.AssignmentId, ProblemId = m.ProblemId })
+                    .ToList(),
+                Comment = submission.Comment,
+            })
                               .ToListAsync();
         foreach (var s in submissions)
         {
@@ -178,7 +184,7 @@ public class SubmissionSummaryDTO
     public string AssignmentName { get; set; } = "";
     public Grade Grade { get; set; } = Grade.None;
     public DateTimeOffset SubmittedAt { get; set; }
-    public List<ProblemDTO> NeedCorrection { get; set; } = new();
-    public List<ProblemDTO> HasCorrected { get; set; } = new();
+    public List<ProblemDTO> NeedCorrection { get; set; } = null!;
+    public List<ProblemDTO> HasCorrected { get; set; } = null!;
     public string Comment { get; set; } = "";
 }

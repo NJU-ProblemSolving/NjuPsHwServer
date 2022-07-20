@@ -42,7 +42,7 @@ public static class GradeExtensions
         Grade.Bminus => "B-",
         Grade.C => "C",
         Grade.D => "D",
-        _ => throw new ArgumentOutOfRangeException(),
+        _ => throw new ArgumentOutOfRangeException(nameof(grade)),
     };
 
     public static float ToScore(this Grade grade) => grade switch
@@ -54,6 +54,6 @@ public static class GradeExtensions
         Grade.C => 70,
         Grade.D => 60,
         Grade.None => 0,
-        _ => throw new ArgumentOutOfRangeException(),
+        _ => throw new ArgumentOutOfRangeException(nameof(grade)),
     };
 }

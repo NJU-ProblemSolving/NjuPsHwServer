@@ -16,19 +16,6 @@ public class SummaryController : ControllerBase
         this.dbContext = dbContext;
     }
 
-
-    private class SubmissionKey
-    {
-        public int StudentId;
-        public int AssignmentId;
-
-        public SubmissionKey(int StudentId, int AssignmentId)
-        {
-            this.StudentId = StudentId;
-            this.AssignmentId = AssignmentId;
-        }
-    }
-
     /// <summary>期末汇总成绩</summary>
     [HttpGet]
     public async Task<IActionResult> GetSummary([FromQuery] List<int> exceptionList)
@@ -43,12 +30,12 @@ public class SummaryController : ControllerBase
 
         var res = new System.Text.StringBuilder();
         res.Append("学号, 姓名");
-        foreach (var assignmentId in assignmentIds) { res.Append($", {assignments[assignmentId].Name}"); }
+        foreach (var assignmentId in assignmentIds) { res.Append(", ").Append(assignments[assignmentId].Name); }
         res.AppendLine(", 总分");
 
         foreach (var student in dbContext.Students)
         {
-            res.Append($"{student.Id}, {student.Name}");
+            res.Append(NumberFormatInfo.InvariantInfo, $"{student.Id}, {student.Name}");
             var totalScore = 0.0;
             foreach (var assignmentId in assignmentIds)
             {
@@ -59,7 +46,7 @@ public class SummaryController : ControllerBase
                             x.Grade,
                             x.SubmittedAt,
                             Corrected = x.NeedCorrection.Where(y => y.CorrectedIn != null).Count(),
-                            Total = x.NeedCorrection.Count(),
+                            Total = x.NeedCorrection.Count,
                         })
                         .SingleOrDefaultAsync();
 
@@ -68,11 +55,11 @@ public class SummaryController : ControllerBase
                 {
                     var basicScore = submission.Grade.ToScore();
                     totalScore += basicScore;
-                    res.Append($", {submission.Grade.GetDescription()}");
+                    res.Append(", ").Append(submission.Grade.GetDescription());
                     // 迟交
                     if (submission.SubmittedAt > assignments[assignmentId].Deadline)
                     {
-                        res.Append("*");
+                        res.Append('*');
                         totalScore -= 10;
                     }
                     if (submission.Total != 0)
@@ -81,11 +68,11 @@ public class SummaryController : ControllerBase
                         var revisionScore = 0.1 * submission.Corrected - 0.3 * (submission.Total - submission.Corrected);
                         revisionScore = MathF.Max(100 - basicScore, 20) * revisionScore / submission.Total;
                         totalScore += revisionScore;
-                        res.Append($"({submission.Corrected}/{submission.Total})");
+                        res.Append(NumberFormatInfo.InvariantInfo, $"({submission.Corrected}/{submission.Total})");
                     }
                 }
             }
-            res.AppendLine($", {totalScore / assignmentIds.Count}");
+            res.AppendLine(NumberFormatInfo.InvariantInfo, $", {totalScore / assignmentIds.Count}");
         }
 
         return Ok(res.ToString());

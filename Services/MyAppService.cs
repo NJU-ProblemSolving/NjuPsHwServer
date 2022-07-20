@@ -1,8 +1,8 @@
 namespace NjuCsCmsHelper.Server.Services;
 
 using Microsoft.Extensions.Caching.Memory;
-using NjuCsCmsHelper.Server.Controllers;
 using NjuCsCmsHelper.Models;
+using NjuCsCmsHelper.Server.Controllers;
 
 public interface IMyAppService
 {
@@ -13,20 +13,18 @@ public interface IMyAppService
 
 public class AttachmentInfo
 {
-    public int AttachmentId;
-    public string AttachmentFilename = null!;
+    public int AttachmentId { get; set; }
+    public string AttachmentFilename { get; set; } = null!;
 }
 
 public class MyAppService : IMyAppService
 {
     private readonly AppDbContext dbContext;
-    private readonly IConfiguration configuration;
     private readonly IMemoryCache cache;
 
-    public MyAppService(AppDbContext dbContext, IConfiguration configuration, IMemoryCache cache)
+    public MyAppService(AppDbContext dbContext, IMemoryCache cache)
     {
         this.dbContext = dbContext;
-        this.configuration = configuration;
         this.cache = cache;
     }
 
