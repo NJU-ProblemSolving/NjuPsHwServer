@@ -35,3 +35,7 @@
 
 此后每次推送至 `Github` 即可自动构建并部署。
 
+#### 重启应用
+
+使用 `kubectl replace --force -n njupshw -f deployment.yml` 即可重启应用。
+

@@ -19,6 +19,7 @@ public class AssignmentController : ControllerBase
     /// <summary>获取所有作业的信息</summary>
     [HttpGet]
     [ProducesResponseType(typeof(List<Assignment>), StatusCodes.Status200OK)]
+    [AllowAnonymous]
     public async Task<IActionResult> Get() { return Ok(await dbContext.Assignments.ToListAsync()); }
 
     /// <summary>获取指定作业的信息</summary>
@@ -26,6 +27,7 @@ public class AssignmentController : ControllerBase
     [Route("{assignmentId:int}")]
     [ProducesResponseType(typeof(Assignment), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [AllowAnonymous]
     public async Task<IActionResult> Get(int assignmentId)
     {
         if (await dbContext.Assignments.SingleOrDefaultAsync(assignment => assignment.Id == assignmentId)

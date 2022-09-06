@@ -33,6 +33,20 @@ builder.Services.AddSwaggerGen(c =>
     var xmlFile = $"{typeof(Program).Assembly.GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(xmlPath);
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme {
+        Name = "Authorization",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Header,
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Scheme = "Bearer",
+        BearerFormat = "JWT",
+        Description = "JWT Authorization header using the Bearer scheme."
+    });
+    c.AddSecurityDefinition("Cookies", new Microsoft.OpenApi.Models.OpenApiSecurityScheme {
+        Name = "idsrv",
+        In = Microsoft.OpenApi.Models.ParameterLocation.Cookie,
+        Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
+        Description = "Cookie Authorization."
+    });
 });
 
 var authBuilder = builder.Services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme);
@@ -58,7 +72,7 @@ if (builder.Configuration.GetSection("Jwt").Exists())
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new X509SecurityKey(new X509Certificate2(
-                builder.Configuration["Jwt:Certificate"]
+                builder.Configuration["Jwt:Certificate"], builder.Configuration["Jwt:Password"]
             ))
         };
     });
@@ -92,8 +106,8 @@ builder.Services.AddAuthorization(o =>
     var defaultPolicy = defaultPolicyBuilder.Build();
     o.AddPolicy("Default", defaultPolicy);
     o.AddPolicy("Student", p => p.Combine(defaultPolicy).AddRequirements(OwnerOrAdminRequirement.Instance));
-    o.AddPolicy("Reviewer", p => p.Combine(defaultPolicy).RequireClaim("role", "Admin"));
-    o.AddPolicy("Admin", p => p.Combine(defaultPolicy).RequireClaim("role", "Admin"));
+    o.AddPolicy("Reviewer", p => p.Combine(defaultPolicy).RequireClaim(ClaimTypes.Role, "Admin"));
+    o.AddPolicy("Admin", p => p.Combine(defaultPolicy).RequireClaim(ClaimTypes.Role, "Admin"));
     o.DefaultPolicy = defaultPolicy;
 });
 
