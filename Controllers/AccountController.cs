@@ -88,6 +88,6 @@ public class AccountController : ControllerBase
     [HttpGet]
     public IActionResult Claims()
     {
-        return Ok(User.Claims.Select(x => (x.Type, x.Value)));
+        return Ok(User.Claims.ToDictionary(x => x.Type, x=> x.Value));
     }
 }

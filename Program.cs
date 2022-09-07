@@ -33,7 +33,8 @@ builder.Services.AddSwaggerGen(c =>
     var xmlFile = $"{typeof(Program).Assembly.GetName().Name}.xml";
     var xmlPath = Path.Combine(AppContext.BaseDirectory, xmlFile);
     c.IncludeXmlComments(xmlPath);
-    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme {
+    c.AddSecurityDefinition("Bearer", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
         Name = "Authorization",
         In = Microsoft.OpenApi.Models.ParameterLocation.Header,
         Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
@@ -41,7 +42,8 @@ builder.Services.AddSwaggerGen(c =>
         BearerFormat = "JWT",
         Description = "JWT Authorization header using the Bearer scheme."
     });
-    c.AddSecurityDefinition("Cookies", new Microsoft.OpenApi.Models.OpenApiSecurityScheme {
+    c.AddSecurityDefinition("Cookies", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    {
         Name = "idsrv",
         In = Microsoft.OpenApi.Models.ParameterLocation.Cookie,
         Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
