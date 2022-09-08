@@ -174,9 +174,8 @@ public class ReviewController : ControllerBase
                     AttachmentFilename = $"{x.Submission.StudentId}-{x.Submission.Student.Name}--{x.Filename}",
                 }).ToListAsync();
 
-        var pipe = new System.IO.Pipelines.Pipe();
-        await submissionService.GetArchiveAsync(assignmentId, reviewerId, assignment.Name, attachments, pipe.Writer.AsStream());
-        return File(pipe.Reader.AsStream(), "application/octet-stream", $"{assignment.Name}.zip");
+        var stream = await submissionService.GenerateArchiveAsync(assignmentId, reviewerId, assignment.Name, attachments);
+        return File(stream, "application/octet-stream", $"{assignment.Name}.zip");
     }
 }
 

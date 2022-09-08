@@ -68,9 +68,17 @@ public class SubmissionService
         await dbContext.SaveChangesAsync();
     }
 
+    public async Task<Stream> GenerateArchiveAsync(int assignmentId, int reviewerId, string assignmentName, IEnumerable<AttachmentInfo> attachmentList)
+    {
+        var stream = new MemoryStream();
+        await GetArchiveAsync(assignmentId, reviewerId, assignmentName, attachmentList, stream);
+        stream.Seek(0, SeekOrigin.Begin);
+        return stream;
+    }
+
     public async Task GetArchiveAsync(int assignmentId, int reviewerId, string assignmentName, IEnumerable<AttachmentInfo> attachmentList, Stream outStream)
     {
-        using var zipStream = new ZipArchive(outStream, ZipArchiveMode.Create);
+        using var zipStream = new ZipArchive(outStream, ZipArchiveMode.Create, leaveOpen: true);
 
         {
             var entry = zipStream.CreateEntry($"{assignmentName}/send.py");
