@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Security.Cryptography.X509Certificates;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -6,6 +7,8 @@ using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
 using NjuCsCmsHelper.Models;
 using NjuCsCmsHelper.Server.Services;
+using Swashbuckle.AspNetCore.Filteres;
+using Swashbuckle.AspNetCore.SwaggerGen;
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -23,6 +26,10 @@ builder.Services.AddDbContext<AppDbContext>(options =>
         o => o.UseQuerySplittingBehavior(QuerySplittingBehavior.SplitQuery)
     );
     // options.LogTo(Console.WriteLine);
+});
+builder.Services.AddAutoMapper(config =>
+{
+    config.AddProfile<AppProfile>();
 });
 
 // Learn more about configuring Swagger/OpenAPI at
@@ -42,12 +49,17 @@ builder.Services.AddSwaggerGen(c =>
         BearerFormat = "JWT",
         Description = "JWT Authorization header using the Bearer scheme."
     });
-    c.AddSecurityDefinition("Cookies", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
+    c.AddSecurityDefinition("Cookie", new Microsoft.OpenApi.Models.OpenApiSecurityScheme
     {
-        Name = "idsrv",
+        Name = ".AspNetCore.Cookies",
         In = Microsoft.OpenApi.Models.ParameterLocation.Cookie,
         Type = Microsoft.OpenApi.Models.SecuritySchemeType.ApiKey,
         Description = "Cookie Authorization."
+    });
+    c.OperationFilter<AddAuthHeaderOperationFilter>();
+    c.CustomOperationIds(apiDesc =>
+    {
+        return apiDesc.TryGetMethodInfo(out MethodInfo methodInfo) ? methodInfo.Name : null;
     });
 });
 
@@ -114,7 +126,7 @@ builder.Services.AddAuthorization(o =>
 });
 
 builder.Services.AddSingleton<IMemoryCache, MemoryCache>();
-builder.Services.AddScoped<IMyAppService, MyAppService>();
+builder.Services.AddScoped<MyAppService>();
 builder.Services.AddScoped<SubmissionService>();
 builder.Services.AddScoped<MailingService>();
 

@@ -5,30 +5,23 @@ using Models;
 [Route("api/[controller]")]
 [ApiController]
 [Authorize]
-public class AssignmentController : ControllerBase
+public class AssignmentController : AppControllerBase<AssignmentController>
 {
-    private readonly ILogger<AssignmentController> logger;
-    private readonly AppDbContext dbContext;
-
-    public AssignmentController(ILogger<AssignmentController> logger, AppDbContext dbContext)
-    {
-        this.logger = logger;
-        this.dbContext = dbContext;
-    }
+    public AssignmentController(IServiceProvider provider) : base(provider) { }
 
     /// <summary>获取所有作业的信息</summary>
     [HttpGet]
     [ProducesResponseType(typeof(List<Assignment>), StatusCodes.Status200OK)]
     [AllowAnonymous]
-    public async Task<IActionResult> Get() { return Ok(await dbContext.Assignments.ToListAsync()); }
+    public async Task<IActionResult> GetAssignments() { return Ok(await dbContext.Assignments.ToListAsync()); }
 
     /// <summary>获取指定作业的信息</summary>
     [HttpGet]
     [Route("{assignmentId:int}")]
     [ProducesResponseType(typeof(Assignment), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(string), StatusCodes.Status404NotFound)]
     [AllowAnonymous]
-    public async Task<IActionResult> Get(int assignmentId)
+    public async Task<IActionResult> GetAssignment(int assignmentId)
     {
         if (await dbContext.Assignments.SingleOrDefaultAsync(assignment => assignment.Id == assignmentId)
                 is Assignment assignment)
@@ -41,30 +34,30 @@ public class AssignmentController : ControllerBase
     [HttpPost]
     [Authorize("Admin")]
     [ProducesResponseType(typeof(Assignment), StatusCodes.Status201Created)]
-    [ProducesResponseType(StatusCodes.Status409Conflict)]
-    public async Task<IActionResult> Create([FromBody] Assignment assignment)
+    [ProducesResponseType(typeof(string), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> CreateAssignment([FromBody] Assignment assignment)
     {
         if (await dbContext.Assignments.AnyAsync(a => a.Name == assignment.Name))
-            return Conflict("Assignment already exists");
+            return Conflict("Assignment ID already exists");
 
         dbContext.Assignments.Add(assignment);
         await dbContext.SaveChangesAsync();
 
-        return CreatedAtAction(nameof(Get), new { id = assignment.Id }, assignment);
+        return CreatedAtAction(nameof(GetAssignment), new { assignmentId = assignment.Id }, assignment);
     }
 
     /// <summary>更新作业信息</summary>
     [HttpPut]
     [Authorize("Admin")]
     [Route("{assignmentId:int}")]
-    [ProducesResponseType(typeof(Assignment), StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Update(int assignmentId, [FromBody] Assignment assignment)
+    public async Task<IActionResult> UpdateAssignment(int assignmentId, [FromBody] Assignment assignment)
     {
         if (assignment.Id != 0 && assignment.Id != assignmentId) return BadRequest();
         var assignmentInDb = await dbContext.Assignments.SingleAsync(a => a.Id == assignmentId);
-        if (assignmentInDb == null) return NotFound();
+        if (assignmentInDb == null) return NotFound("Assignment ID not found");
 
         assignmentInDb.Name = assignment.Name;
         assignmentInDb.NumberOfProblems = assignment.NumberOfProblems;

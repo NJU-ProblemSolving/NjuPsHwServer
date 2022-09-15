@@ -5,23 +5,16 @@ using Models;
 [Route("api/[controller]")]
 [ApiController]
 [Authorize("Admin")]
-public class SummaryController : ControllerBase
+public class SummaryController : AppControllerBase<SummaryController>
 {
-    private readonly ILogger<SummaryController> logger;
-    private readonly AppDbContext dbContext;
-
-    public SummaryController(ILogger<SummaryController> logger, AppDbContext dbContext)
-    {
-        this.logger = logger;
-        this.dbContext = dbContext;
-    }
+    public SummaryController(IServiceProvider provider) : base(provider) { }
 
     /// <summary>期末汇总成绩</summary>
     [HttpGet]
-    public async Task<IActionResult> GetSummary([FromQuery] List<int> exceptionList)
+    public async Task<IActionResult> GetSummary([FromQuery] List<int> excludeAssignments)
     {
         var assignmentIds = await dbContext.Assignments.Select(a => a.Id).OrderBy(x => x).ToListAsync();
-        assignmentIds = assignmentIds.Except(exceptionList).ToList();
+        assignmentIds = assignmentIds.Except(excludeAssignments).ToList();
         var assignments = new Dictionary<int, Assignment>();
         foreach (var assignmentId in assignmentIds)
         {

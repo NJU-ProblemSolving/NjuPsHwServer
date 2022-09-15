@@ -1,0 +1,93 @@
+namespace NjuCsCmsHelper.Server.Controllers;
+
+using Models;
+using Services;
+
+[Route("api/[controller]")]
+[ApiController]
+[Authorize]
+public class SubmissionController : AppControllerBase<SubmissionController>
+{
+    public SubmissionController(IServiceProvider provider) : base(provider) { }
+
+    /// <summary>获取某个学生的作业情况汇总</summary>
+    [HttpGet]
+    [Authorize]
+    [ProducesResponseType(typeof(List<SubmissionDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> GetSubmissionSummary([Required] int studentId)
+    {
+        var authorizeResult =
+            await authorizationService.AuthorizeAsync(User, studentId, OwnerOrAdminRequirement.Instance);
+        if (!authorizeResult.Succeeded) return Forbid();
+
+        var submissions = await dbContext.Submissions
+            .Where(submission => submission.StudentId == studentId)
+            .OrderBy(submission => submission.AssignmentId)
+            .Select(submission => new SubmissionDto
+            {
+                AssignmentId = submission.AssignmentId,
+                Grade = submission.Grade,
+                SubmittedAt = submission.SubmittedAt,
+                NeedCorrection = submission.NeedCorrection
+                    .OrderBy(mistake => mistake.ProblemId)
+                    .Select(m => new MistakeDto { AssignmentId = m.AssignmentId, ProblemId = m.ProblemId })
+                    .ToList(),
+                HasCorrected = submission.HasCorrected
+                    .OrderBy(mistake => mistake.AssignmentId)
+                    .ThenBy(mistake => mistake.ProblemId)
+                    .Select(m => new MistakeDto { AssignmentId = m.AssignmentId, ProblemId = m.ProblemId })
+                    .ToList(),
+                Comment = submission.Comment,
+            })
+                              .ToListAsync();
+        foreach (var s in submissions)
+        {
+            s.AssignmentName = await myAppService.GetAssignmentNameById(s.AssignmentId);
+            await Task.WhenAll(s.NeedCorrection.Select(x => myAppService.FillProblemDTO(x)));
+            await Task.WhenAll(s.HasCorrected.Select(x => myAppService.FillProblemDTO(x)));
+        }
+        return Ok(submissions);
+    }
+
+    /// <summary>提交作业</summary>
+    /// <param name="assignmentId">作业ID</param>
+    /// <param name="studentId">提交人</param>
+    /// <param name="submittedAt">提交时间</param>
+    /// <param name="file">附件</param>
+    [HttpPost]
+    [Authorize]
+    [Consumes("multipart/form-data")]
+    [ProducesResponseType(StatusCodes.Status201Created)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> Submit([FromForm, Required] int studentId, [FromForm, Required] int assignmentId, [FromForm] DateTimeOffset? submittedAt,
+                                            IFormFile file)
+    {
+        var authorizeResult =
+            await authorizationService.AuthorizeAsync(User, studentId, OwnerOrAdminRequirement.Instance);
+        if (!authorizeResult.Succeeded) return Forbid();
+
+        if (!User.IsInRole("Admin") && file.Length > AppConfig.AttachmentSizeLimit) return BadRequest("File too big");
+
+        if (!await dbContext.Assignments.AnyAsync(a => a.Id == assignmentId)) return NotFound("Assignment not found");
+        if (!await dbContext.Students.AnyAsync(s => s.Id == studentId)) return NotFound("Student not found");
+        if (submittedAt != null && !User.IsInRole("Admin")) return Forbid("Unauthorized to set submission time");
+
+        var submission = new Submission
+        {
+            StudentId = studentId,
+            AssignmentId = assignmentId,
+            SubmittedAt = submittedAt ?? DateTimeOffset.Now,
+        };
+        if (await submissionService.AddSubmissionAsync(submission))
+        {
+            await submissionService.AddAttachmentAsync(submission, file.FileName, file.OpenReadStream());
+            return CreatedAtAction(nameof(GetSubmissionSummary), new { studentId }, null);
+        }
+        else
+        {
+            return NoContent();
+        }
+    }
+}

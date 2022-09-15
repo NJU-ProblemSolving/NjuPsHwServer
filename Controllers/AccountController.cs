@@ -3,25 +3,18 @@ namespace NjuCsCmsHelper.Server.Controllers;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 
-using Models;
-
 [Route("api/[controller]/[action]")]
 [ApiController]
 [Authorize]
-public class AccountController : ControllerBase
+public class AccountController : AppControllerBase<AccountController>
 {
-    private readonly ILogger<AccountController> logger;
-    private readonly AppDbContext dbContext;
-
-    public AccountController(ILogger<AccountController> logger, AppDbContext dbContext)
-    {
-        this.logger = logger;
-        this.dbContext = dbContext;
-    }
+    public AccountController(IServiceProvider provider) : base(provider) { }
 
     [HttpPost]
     [AllowAnonymous]
-    public async Task<IActionResult> Login([FromBody] string token)
+    [ProducesResponseType(typeof(AccountInfo), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    public async Task<IActionResult> Login([Required, FromBody] string token)
     {
         var tokenInfo = await dbContext.Tokens.Include(x => x.Student).SingleOrDefaultAsync(x => x.Id == token);
         if (tokenInfo == null) return Unauthorized();
@@ -38,18 +31,21 @@ public class AccountController : ControllerBase
         var principal = new ClaimsPrincipal(identity);
         await HttpContext.SignInAsync(principal, new AuthenticationProperties { IsPersistent = true });
 
-        return Ok(new { Id = studentId, Name = studentName, tokenInfo.IsAdmin });
+        return Ok(new AccountInfo { Id = studentId, Name = studentName, IsAdmin = tokenInfo.IsAdmin });
     }
 
-    [HttpGet]
+    [HttpPost]
     public async Task<IActionResult> Logout()
     {
         await HttpContext.SignOutAsync();
         return Ok();
     }
 
-    [HttpGet]
+    [HttpPost]
     [AllowAnonymous]
+    [ProducesResponseType(typeof(AccountInfo), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> LoginJwt()
     {
         var res = await HttpContext.AuthenticateAsync(JwtBearerDefaults.AuthenticationScheme);
@@ -60,7 +56,7 @@ public class AccountController : ControllerBase
         var studentIdClaim = res.Principal.Claims.SingleOrDefault(x => x.Type == AppUserClaims.StudentId);
         if (studentIdClaim is null)
             return BadRequest("Jwt contains no studentId");
-        var studentId = int.Parse(studentIdClaim.Value);
+        var studentId = int.Parse(studentIdClaim.Value, CultureInfo.InvariantCulture);
 
         var studentName = res.Principal.Claims.SingleOrDefault(x => x.Type == AppUserClaims.StudentName);
         if (studentName is null)
@@ -71,7 +67,7 @@ public class AccountController : ControllerBase
             return Unauthorized("Student is not registered");
 
         var claims = new List<Claim> {
-            new Claim(AppUserClaims.StudentId, studentId.ToString()),
+            new Claim(AppUserClaims.StudentId, studentId.ToString(CultureInfo.InvariantCulture)),
             new Claim(AppUserClaims.StudentName, studentName.Value),
         };
 
@@ -82,12 +78,24 @@ public class AccountController : ControllerBase
         var principal = new ClaimsPrincipal(identity);
         await HttpContext.SignInAsync(principal, new AuthenticationProperties { IsPersistent = true });
 
-        return Ok(new { Id = studentId, Name = studentName.Value, IsAdmin = isAdmin, Token = token.Id });
+        return Ok(new AccountInfo { Id = studentId, Name = studentName.Value, IsAdmin = isAdmin, Token = token.Id });
     }
 
     [HttpGet]
-    public IActionResult Claims()
+    [ProducesResponseType(typeof(Dictionary<string, string>), StatusCodes.Status200OK)]
+    public IActionResult GetClaims()
     {
-        return Ok(User.Claims.ToDictionary(x => x.Type, x=> x.Value));
+        return Ok(User.Claims.ToDictionary(x => x.Type, x => x.Value));
     }
+}
+
+public class AccountInfo
+{
+    [Required]
+    public int Id { get; set; }
+    [Required]
+    public string Name { get; set; } = null!;
+    [Required]
+    public bool IsAdmin { get; set; }
+    public string? Token { get; set; }
 }

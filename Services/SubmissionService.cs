@@ -68,7 +68,7 @@ public class SubmissionService
         await dbContext.SaveChangesAsync();
     }
 
-    public async Task<Stream> GenerateArchiveAsync(int assignmentId, int reviewerId, string assignmentName, IEnumerable<AttachmentInfo> attachmentList)
+    public async Task<Stream> GenerateArchiveAsync(int assignmentId, int? reviewerId, string assignmentName, IEnumerable<AttachmentInfo> attachmentList)
     {
         var stream = new MemoryStream();
         await GetArchiveAsync(assignmentId, reviewerId, assignmentName, attachmentList, stream);
@@ -76,24 +76,27 @@ public class SubmissionService
         return stream;
     }
 
-    public async Task GetArchiveAsync(int assignmentId, int reviewerId, string assignmentName, IEnumerable<AttachmentInfo> attachmentList, Stream outStream)
+    public async Task GetArchiveAsync(int assignmentId, int? reviewerId, string assignmentName, IEnumerable<AttachmentInfo> attachmentList, Stream outStream)
     {
         using var zipStream = new ZipArchive(outStream, ZipArchiveMode.Create, leaveOpen: true);
 
+        if (reviewerId is int _reviewerId)
         {
-            var entry = zipStream.CreateEntry($"{assignmentName}/send.py");
-            var script = await File.ReadAllTextAsync($"Assets/SendMail/send.py");
-            script = script.Replace("#$reviewerId", reviewerId.ToString(NumberFormatInfo.InvariantInfo));
-            script = script.Replace("#$assignmentId", assignmentId.ToString(NumberFormatInfo.InvariantInfo));
-            script = script.Replace("#$assignmentName", $"\"{assignmentName}\"");
-            using var entryStream = entry.Open();
-            await entryStream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(script));
-        }
-        {
-            var entry = zipStream.CreateEntry($"{assignmentName}/sendconfig.json");
-            using var file = File.OpenRead($"Assets/SendMail/sendconfig.json");
-            using var entryStream = entry.Open();
-            await file.CopyToAsync(entryStream);
+            {
+                var entry = zipStream.CreateEntry($"{assignmentName}/send.py");
+                var script = await File.ReadAllTextAsync($"Assets/SendMail/send.py");
+                script = script.Replace("#$reviewerId", _reviewerId.ToString(NumberFormatInfo.InvariantInfo));
+                script = script.Replace("#$assignmentId", assignmentId.ToString(NumberFormatInfo.InvariantInfo));
+                script = script.Replace("#$assignmentName", $"\"{assignmentName}\"");
+                using var entryStream = entry.Open();
+                await entryStream.WriteAsync(System.Text.Encoding.UTF8.GetBytes(script));
+            }
+            {
+                var entry = zipStream.CreateEntry($"{assignmentName}/sendconfig.json");
+                using var file = File.OpenRead($"Assets/SendMail/sendconfig.json");
+                using var entryStream = entry.Open();
+                await file.CopyToAsync(entryStream);
+            }
         }
 
         foreach (var attachmentInfo in attachmentList)

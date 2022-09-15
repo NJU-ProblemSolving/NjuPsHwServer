@@ -2,14 +2,6 @@ namespace NjuCsCmsHelper.Server.Services;
 
 using Microsoft.Extensions.Caching.Memory;
 using NjuCsCmsHelper.Models;
-using NjuCsCmsHelper.Server.Controllers;
-
-public interface IMyAppService
-{
-    Task<string> GetAssignmentNameById(int assignmentId);
-    Task<ProblemDTO> GetProblemDTO(int assignmentId, int problemId);
-    Task FillProblemDTO(ProblemDTO problem);
-}
 
 public class AttachmentInfo
 {
@@ -17,7 +9,7 @@ public class AttachmentInfo
     public string AttachmentFilename { get; set; } = null!;
 }
 
-public class MyAppService : IMyAppService
+public class MyAppService
 {
     private readonly AppDbContext dbContext;
     private readonly IMemoryCache cache;
@@ -39,11 +31,11 @@ public class MyAppService : IMyAppService
         return assignmentName;
     }
 
-    public async Task FillProblemDTO(ProblemDTO problem)
+    public async Task FillProblemDTO(MistakeDto problem)
     {
         problem.Display = $"{await GetAssignmentNameById(problem.AssignmentId)}.{problem.ProblemId}";
     }
-    public async Task<ProblemDTO> GetProblemDTO(int assignmentId, int problemId) => new ProblemDTO
+    public async Task<MistakeDto> GetProblemDTO(int assignmentId, int problemId) => new MistakeDto
     {
         AssignmentId = assignmentId,
         ProblemId = problemId,

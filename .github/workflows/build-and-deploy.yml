@@ -3,6 +3,12 @@ on:
   push:
     branches:
       - main
+      - develop
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -29,18 +35,19 @@ jobs:
           echo "::set-output name=reponame_lowercase::$reponame_lowercase"
 
       - name: Login to Docker Hub
-        uses: docker/login-action@v1
+        uses: docker/login-action@v2
         with:
           username: '${{ secrets.DOCKER_HUB_USERNAME }}'
           password: '${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}'
       - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
+        uses: docker/setup-buildx-action@v2
 
       - name: Build and push
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: ./
           file: ./deployment/Dockerfile
+          build-args: REVISION=${{ steps.info.outputs.revision }}
           builder: '${{ steps.buildx.outputs.name }}'
           push: true
           tags: |
@@ -48,44 +55,40 @@ jobs:
           cache-from: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/${{ steps.info.outputs.reponame_lowercase }}:buildcache
           cache-to: type=registry,ref=${{ secrets.DOCKER_HUB_USERNAME }}/${{ steps.info.outputs.reponame_lowercase }}:buildcache,mode=max
 
-  swagger-codegen:
+  deploy-dev:
+    if: github.ref == 'refs/heads/develop'
     runs-on: ubuntu-latest
     needs: build
-    steps:
-      - name: Export swagger.json
-        run: |
-          container_id=$(docker create "${{ secrets.DOCKER_HUB_USERNAME }}/${{ needs.build.outputs.reponame_lowercase }}:${{ needs.build.outputs.revision }}")
-          docker cp "$container_id:/app/swagger.json" "swagger.json"
-          docker rm "$container_id"
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: swagger
-          path: swagger.json
-
-      - name: Generate client
-        run: |
-          docker run --rm -v ${PWD}:/local swaggerapi/swagger-codegen-cli-v3 generate \
-            -i /local/swagger.json \
-            -l typescript-fetch  \
-            -o /local/ts \
-            -DsupportsES6=true \
-            -DnpmName=NjuPsHwApi \
-            -DnpmVersion=${{ needs.build.outputs.revision }}
-
-      - uses: actions/upload-artifact@v3
-        with:
-          name: ts
-          path: ts/
-
-  deploy-prod:
-    runs-on: ubuntu-latest
-    needs: build
+    environment: dev
     steps:
       - uses: actions/checkout@v3
 
-      - uses: azure/setup-kubectl@v2.0
-      - uses: azure/k8s-set-context@v1
+      - uses: azure/setup-kubectl@v3
+      - uses: azure/k8s-set-context@v3
+        with:
+          method: kubeconfig
+          kubeconfig: ${{ secrets.KUBECONFIG }}
+
+      - name: Deploy to Kubernetes
+        uses: Azure/k8s-deploy@v4
+        with:
+          namespace: njupshw-dev
+          manifests: |
+            deployment/deployment.yml
+            deployment/service.yml
+          images:
+            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ needs.build.outputs.reponame_lowercase }}:${{ needs.build.outputs.revision }}
+
+  deploy-prod:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    needs: build
+    environment: prod
+    steps:
+      - uses: actions/checkout@v3
+
+      - uses: azure/setup-kubectl@v3
+      - uses: azure/k8s-set-context@v3
         with:
           method: kubeconfig
           kubeconfig: ${{ secrets.KUBECONFIG }}

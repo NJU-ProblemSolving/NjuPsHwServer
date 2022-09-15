@@ -1,5 +1,6 @@
 namespace NjuCsCmsHelper.Models;
 
+[Index(nameof(SubmissionId))]
 public class Attachment
 {
     public int Id { get; set; }

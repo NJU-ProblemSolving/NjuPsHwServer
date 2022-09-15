@@ -3,31 +3,21 @@ namespace NjuCsCmsHelper.Server.Controllers;
 using Models;
 using Services;
 
-[Route("api/[controller]")]
+[Route("api/[controller]/{assignmentId:int}")]
 [ApiController]
 [Authorize("Reviewer")]
-public class ReviewController : ControllerBase
+public class ReviewController : AppControllerBase<ReviewController>
 {
-    private readonly ILogger<ReviewController> logger;
-    private readonly AppDbContext dbContext;
-    private readonly IMyAppService myAppService;
-    private readonly SubmissionService submissionService;
-
-    public ReviewController(ILogger<ReviewController> logger, AppDbContext dbContext, IMyAppService myAppService, SubmissionService submissionService)
-    {
-        this.logger = logger;
-        this.dbContext = dbContext;
-        this.myAppService = myAppService;
-        this.submissionService = submissionService;
-    }
+    public ReviewController(IServiceProvider provider) : base(provider) { }
 
     /// <summary>获取评阅结果</summary>
     /// <param name="assignmentId">作业ID</param>
     /// <param name="reviewerId">评阅人ID，函数将获取该评阅人的评阅结果，为空时获取本次作业的所有结果</param>
     /// <returns>评阅结果列表</returns>
     [HttpGet]
-    [ProducesResponseType(typeof(List<ReviewInfoDTO>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> Get(int assignmentId, int? reviewerId)
+    [ProducesResponseType(typeof(List<ReviewInfoDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetReview(int assignmentId, int? reviewerId)
     {
         if (await GetAssignment(assignmentId) == null)
             return NotFound("Assignment ID not exists");
@@ -37,17 +27,17 @@ public class ReviewController : ControllerBase
             submissions = submissions.Where(submission => submission.Student.ReviewerId == reviewerId);
 
         var infos = await submissions
-                        .Select(submission => new ReviewInfoDTO
+                        .Select(submission => new ReviewInfoDto
                         {
                             StudentId = submission.StudentId,
                             StudentName = submission.Student.Name,
                             SubmittedAt = submission.SubmittedAt,
                             Grade = submission.Grade,
                             NeedCorrection = submission.NeedCorrection.OrderBy(m => m.AssignmentId).ThenBy(m => m.ProblemId)
-                                                 .Select(m => new ProblemDTO { AssignmentId = m.AssignmentId, ProblemId = m.ProblemId })
+                                                 .Select(m => new MistakeDto { AssignmentId = m.AssignmentId, ProblemId = m.ProblemId })
                                                  .ToList(),
                             HasCorrected =
-                                submission.HasCorrected.OrderBy(m => m.AssignmentId).ThenBy(m => m.ProblemId).Select(m => new ProblemDTO { AssignmentId = m.AssignmentId, ProblemId = m.ProblemId })
+                                submission.HasCorrected.OrderBy(m => m.AssignmentId).ThenBy(m => m.ProblemId).Select(m => new MistakeDto { AssignmentId = m.AssignmentId, ProblemId = m.ProblemId })
                                     .ToList(),
                             Comment = submission.Comment,
                             Track = submission.Track,
@@ -56,8 +46,8 @@ public class ReviewController : ControllerBase
 
         foreach (var info in infos)
         {
-            info.NeedCorrection.ForEach(x => myAppService.FillProblemDTO(x));
-            info.HasCorrected.ForEach(x => myAppService.FillProblemDTO(x));
+            await Task.WhenAll(info.NeedCorrection.Select(x => myAppService.FillProblemDTO(x)));
+            await Task.WhenAll(info.HasCorrected.Select(x => myAppService.FillProblemDTO(x)));
         }
 
         return Ok(infos);
@@ -66,8 +56,9 @@ public class ReviewController : ControllerBase
     /// <summary>更新评阅结果</summary>
     /// <param name="assignmentId">作业ID</param>
     /// <param name="reviewResults">更新后的评阅列表</param>
-    [HttpPost]
-    public async Task<IActionResult> Update(int assignmentId, [FromBody] List<ReviewInfoDTO> reviewResults)
+    [HttpPatch]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> UpdateReview(int assignmentId, [FromBody] List<ReviewInfoDto> reviewResults)
     {
         if (!await IsAssignmentIdExists(assignmentId)) return NotFound("Assignment ID not exists");
 
@@ -98,13 +89,13 @@ public class ReviewController : ControllerBase
         }
 
         await dbContext.SaveChangesAsync();
-        return Ok();
+        return NoContent();
     }
 
     private Task<bool> IsAssignmentIdExists(int assignmentId) => dbContext.Assignments.AnyAsync(a => a.Id == assignmentId);
     private Task<Assignment?> GetAssignment(int assignmentId) => dbContext.Assignments.SingleOrDefaultAsync(a => a.Id == assignmentId);
 
-    private async Task SetMistake(ICollection<ProblemDTO> problemList, int studentId, Submission submission)
+    private async Task SetMistake(ICollection<MistakeDto> problemList, int studentId, Submission submission)
     {
         var mistakes = await dbContext.Mistakes.Where(m => m.MadeInId == submission.Id).ToListAsync();
         var taskList = problemList.Select(async problem =>
@@ -131,7 +122,7 @@ public class ReviewController : ControllerBase
         await Task.WhenAll(taskList);
         dbContext.Mistakes.RemoveRange(mistakes);
     }
-    private async Task CorrectMistake(ICollection<ProblemDTO> problemList, int studentId, Submission submission)
+    private async Task CorrectMistake(ICollection<MistakeDto> problemList, int studentId, Submission submission)
     {
         var taskList = problemList.Select(async problem =>
         {
@@ -159,15 +150,22 @@ public class ReviewController : ControllerBase
     [Route("Archieve")]
     [Produces("application/octet-stream")]
     [ProducesResponseType(typeof(byte[]), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetReviewAchieve(int assignmentId, int reviewerId)
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetReviewAchieve(int assignmentId, int? reviewerId)
     {
         var assignment = await dbContext.Assignments.SingleOrDefaultAsync(x => x.Id == assignmentId);
         if (assignment == null)
             return NotFound("Assignment not exists");
 
-        var attachments =
-            await dbContext.Attachments
-                .Where(x => x.Submission.AssignmentId == assignmentId && x.Submission.Student.ReviewerId == reviewerId)
+        var query = dbContext.Attachments
+                .Where(x => x.Submission.AssignmentId == assignmentId);
+
+        if (reviewerId is not null)
+        {
+            query = query.Where(x => x.Submission.Student.ReviewerId == reviewerId);
+        }
+
+        var attachments = await query
                 .Select(x => new AttachmentInfo
                 {
                     AttachmentId = x.Id,
@@ -179,14 +177,22 @@ public class ReviewController : ControllerBase
     }
 }
 
-public class ReviewInfoDTO
+public class ReviewInfoDto
 {
+    [Required]
     public int StudentId { get; set; }
-    public string? StudentName { get; set; }
+    [Required]
+    public string StudentName { get; set; } = null!;
+    [Required]
     public DateTimeOffset SubmittedAt { get; set; }
+    [Required]
     public Grade Grade { get; set; } = Grade.None;
-    public List<ProblemDTO> NeedCorrection { get; set; } = new();
-    public List<ProblemDTO> HasCorrected { get; set; } = new();
+    [Required]
+    public List<MistakeDto> NeedCorrection { get; set; } = new();
+    [Required]
+    public List<MistakeDto> HasCorrected { get; set; } = new();
+    [Required]
     public string Comment { get; set; } = "";
+    [Required]
     public string Track { get; set; } = "";
 }

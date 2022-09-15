@@ -8,5 +8,6 @@ public static class AppUserClaims
 
 public static class AppConfig
 {
-    public const int AttachmentSizeLimit = 3 * 1024 * 1024;     // 3MB
+    public const int AttachmentSizeLimit = 10 * 1024 * 1024;
+    public const string Revision = "unknown";
 }
