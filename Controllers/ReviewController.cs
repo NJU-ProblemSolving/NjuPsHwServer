@@ -191,8 +191,8 @@ public class ReviewInfoDto
     public List<MistakeDto> NeedCorrection { get; set; } = new();
     [Required]
     public List<MistakeDto> HasCorrected { get; set; } = new();
-    [Required]
+    [Required(AllowEmptyStrings = true)]
     public string Comment { get; set; } = "";
-    [Required]
+    [Required(AllowEmptyStrings = true)]
     public string Track { get; set; } = "";
 }
