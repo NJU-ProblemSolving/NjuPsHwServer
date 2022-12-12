@@ -16,7 +16,7 @@
 
 设置 `tls` 证书，用于为 `ingress` 配置 `https`。
 域名的证书可通过 `acme.sh` 自动获取并刷新。
-获取证书后可通过 `kubectl create secret tls tls -n njupshw --cert ../cert/hw.pem --key ../cert/hw.key` 导入。
+获取证书后可通过 `kubectl create secret tls tls -n njupshw --cert ../cert/hw.pem --key ../cert/hw.key --dry-run=client --save-config -o yaml | kubectl apply -f -` 导入或更新。
 
 修改 `ingress.yml` 中域名信息并应用，以使用 `ingress` 对外提供服务。
 

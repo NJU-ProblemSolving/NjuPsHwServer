@@ -59,7 +59,7 @@ public class SummaryController : AppControllerBase<SummaryController>
                     {
                         // 订正完成返还 10%，未订正加扣 30%
                         var revisionScore = 0.1 * submission.Corrected - 0.3 * (submission.Total - submission.Corrected);
-                        revisionScore = MathF.Max(100 - basicScore, 20) * revisionScore / submission.Total;
+                        revisionScore = MathF.Min(100 - basicScore, 20) * revisionScore / submission.Total;
                         totalScore += revisionScore;
                         res.Append(NumberFormatInfo.InvariantInfo, $"({submission.Corrected}/{submission.Total})");
                     }
