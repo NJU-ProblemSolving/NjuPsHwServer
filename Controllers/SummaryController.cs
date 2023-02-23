@@ -46,23 +46,31 @@ public class SummaryController : AppControllerBase<SummaryController>
                 if (submission == null) { res.Append(", 未提交"); }
                 else
                 {
-                    var basicScore = submission.Grade.ToScore();
-                    totalScore += basicScore;
                     res.Append(", ").Append(submission.Grade.GetDescription());
+                    var basicScore = (double)submission.Grade.ToScore();
+                    var assignmentScore = basicScore;
+                    if (submission.Grade == Grade.None) {
+                        assignmentScore = 60;
+                    }
                     // 迟交
                     if (submission.SubmittedAt > assignments[assignmentId].Deadline)
                     {
                         res.Append('*');
-                        totalScore -= 10;
+                        assignmentScore -= 10;
+                        if (submission.SubmittedAt - assignments[assignmentId].Deadline > TimeSpan.FromDays(14)) {
+                            res.Append('*');
+                            assignmentScore -= 10;
+                        }
                     }
                     if (submission.Total != 0)
                     {
-                        // 订正完成返还 10%，未订正加扣 30%
+                        // 订正完成返还 10% 扣分，未订正加扣 30%
                         var revisionScore = 0.1 * submission.Corrected - 0.3 * (submission.Total - submission.Corrected);
-                        revisionScore = MathF.Min(100 - basicScore, 20) * revisionScore / submission.Total;
-                        totalScore += revisionScore;
+                        revisionScore = Math.Min(100 - basicScore, 20) * revisionScore / submission.Total;
+                        assignmentScore += revisionScore;
                         res.Append(NumberFormatInfo.InvariantInfo, $"({submission.Corrected}/{submission.Total})");
                     }
+                    totalScore += Math.Max(assignmentScore, 0.0);
                 }
             }
             res.AppendLine(NumberFormatInfo.InvariantInfo, $", {totalScore / assignmentIds.Count}");
