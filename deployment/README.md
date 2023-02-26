@@ -20,9 +20,19 @@
 
 修改 `ingress.yml` 中域名信息并应用，以使用 `ingress` 对外提供服务。
 
+如果在申请证书时需要临时关闭 `ingress` 服务以开放 80 端口，可以使用 `kubectl -n kube-system scale deploy traefik --replicas 0` 将服务实例降为 0。完成后重新设为 1 即可。
+
 #### 启动
 
-依次应用 `depolyment.yml` 及 `service.yml` 即可。
+依次应用 `deployment.yml` 及 `service.yml` 即可。具体命令如下：
+
+```bash
+kubectl create namespace njupshw
+kubectl apply -n njupshw -f deployment.yml
+kubectl apply -n njupshw -f service.yml
+```
+
+可以通过 `kubectl get all -n njupshw` 查看当前部署状态，使用 `kubectl logs -n njupshw statefulset/server` 查看服务器日志。
 
 #### Github Action 自动部署
 
