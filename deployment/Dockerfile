@@ -1,5 +1,5 @@
 # https://hub.docker.com/_/microsoft-dotnet
-FROM mcr.microsoft.com/dotnet/sdk:6.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:7.0 AS build
 WORKDIR /source
 
 ARG REVISION=unknown
@@ -16,12 +16,12 @@ RUN cat Config.cs
 RUN dotnet publish -c release -r linux-x64 --no-self-contained -o /app --no-restore
 
 RUN dotnet new tool-manifest && \
-    dotnet tool install --version 6.4.0 Swashbuckle.AspNetCore.Cli && \
+    dotnet tool install --version 6.5.0 Swashbuckle.AspNetCore.Cli && \
     dotnet swagger tofile --output /app/swagger.json /app/NjuCsCmsHelper.Server.dll v1 && \
     sed -i 's/"additionalProperties": { }/"additionalProperties": false/' /app/swagger.json
 
 # final stage/image
-FROM mcr.microsoft.com/dotnet/aspnet:6.0
+FROM mcr.microsoft.com/dotnet/aspnet:7.0
 WORKDIR /app
 COPY --from=build /app /app
 COPY Assets /app/Assets

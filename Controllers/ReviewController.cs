@@ -1,7 +1,9 @@
 namespace NjuCsCmsHelper.Server.Controllers;
 
+using Datas;
 using Models;
 using Services;
+using Utils;
 
 [Route("api/[controller]/{assignmentId:int}")]
 [ApiController]
@@ -172,8 +174,37 @@ public class ReviewController : AppControllerBase<ReviewController>
                     AttachmentFilename = $"{x.Submission.StudentId}-{x.Submission.Student.Name}--{x.Filename}",
                 }).ToListAsync();
 
-        var stream = await submissionService.GenerateArchiveAsync(assignmentId, reviewerId, assignment.Name, attachments);
-        return File(stream, "application/octet-stream", $"{assignment.Name}.zip");
+        var tempFile = new TempFile();
+        using (var writeStream = tempFile.OpenWrite())
+        {
+            await submissionService.GetArchiveAsync(assignmentId, reviewerId, assignment.Name, attachments, writeStream);
+        }
+        var readStream = tempFile.OpenRead(true);
+        return File(readStream, "application/octet-stream", $"{assignment.Name}.zip");
+    }
+
+    /// <summary>重新随机评阅人</summary>
+    [HttpPost]
+    [Route("ReassignReviewer")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> ReassignReviewer()
+    {
+        var students = await dbContext.Students.ToListAsync<Student?>();
+        var reviewerIds = AppConfig.ReviewerName.Keys.ToList();
+        if (students.Count % reviewerIds.Count != 0) {
+            students.AddRange(Enumerable.Repeat<Student?>(null, reviewerIds.Count - students.Count % reviewerIds.Count));
+        }
+        students.Shuffle();
+
+        foreach (var (student, i) in students.Select((s, i) => (s, i)))
+        {
+            if (student != null) {
+                student.ReviewerId = reviewerIds[i % reviewerIds.Count];
+            }
+        }
+        await dbContext.SaveChangesAsync();
+
+        return NoContent();
     }
 }
 

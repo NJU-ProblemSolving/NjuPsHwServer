@@ -1,6 +1,7 @@
 namespace NjuCsCmsHelper.Models;
 
 using AutoMapper;
+using NjuCsCmsHelper.Datas;
 
 public class AppProfile : Profile
 {

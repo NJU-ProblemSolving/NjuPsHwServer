@@ -1,4 +1,4 @@
-namespace NjuCsCmsHelper.Models;
+namespace NjuCsCmsHelper.Datas;
 
 [Index(nameof(Name), IsUnique = true)]
 public class Assignment

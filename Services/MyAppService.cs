@@ -1,6 +1,7 @@
 namespace NjuCsCmsHelper.Server.Services;
 
 using Microsoft.Extensions.Caching.Memory;
+using NjuCsCmsHelper.Datas;
 using NjuCsCmsHelper.Models;
 
 public class AttachmentInfo

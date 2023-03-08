@@ -1,7 +1,7 @@
 namespace NjuCsCmsHelper.Server.Controllers;
 
 using AutoMapper;
-using Models;
+using Datas;
 using Services;
 
 [Route("api/[controller]")]
@@ -23,21 +23,41 @@ public class StudentController : AppControllerBase<StudentController>
         var student = dtoMapper.Map<StudentDto, Student>(studentDto);
         await dbContext.Students.AddAsync(student);
         await dbContext.SaveChangesAsync();
-        return CreatedAtAction(nameof(GetStudent), new { studentId = student.Id }, null);
+        return CreatedAtAction(nameof(GetStudentInfo), new { studentId = student.Id }, null);
     }
 
     /// <summary>获取学生信息</summary>
     [HttpGet]
     [Authorize("Admin")]
-    [Route("{studentId:int?}")]
+    [Route("{studentId:int}")]
     [ProducesResponseType(typeof(StudentDto), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetStudent(int studentId)
+    public async Task<IActionResult> GetStudentInfo(int studentId)
     {
-        var student = await dbContext.Students.Where(student => student.Id == studentId!).SingleOrDefaultAsync();
+        var authorizeResult = await authorizationService.AuthorizeAsync(User, studentId, OwnerOrAdminRequirement.Instance);
+        if (!authorizeResult.Succeeded) return Forbid();
+
+        var student = await dbContext.Students.Where(student => student.Id == studentId).SingleOrDefaultAsync();
         if (student == null) return NotFound("Student ID not found");
 
         return Ok(dtoMapper.Map<Student, StudentDto>(student));
+    }
+
+    /// <summary>删除学生用户</summary>
+    [HttpDelete]
+    [Authorize("Admin")]
+    [Route("{studentId:int}")]
+    [ProducesResponseType(typeof(StudentDto), StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteStudent(int studentId)
+    {
+        var student = await dbContext.Students.Where(student => student.Id == studentId).SingleOrDefaultAsync();
+        if (student == null) return NotFound("Student ID not found");
+
+        dbContext.Students.Remove(student);
+        await dbContext.SaveChangesAsync();
+
+        return NoContent();
     }
 
     /// <summary>重置 Token 并发送邮件</summary>

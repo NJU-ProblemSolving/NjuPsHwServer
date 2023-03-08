@@ -1,4 +1,4 @@
-namespace NjuCsCmsHelper.Models;
+namespace NjuCsCmsHelper.Datas;
 
 public class AppDbContext : DbContext
 {

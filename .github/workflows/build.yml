@@ -98,7 +98,7 @@ jobs:
             -i /app/swagger.json \
             -g csharp-netcore \
             -o /app/Api \
-            --additional-properties=packageName="NjuCsCmsHelper.Server.Api",packageVersion="$revision",targetFramework="net6.0",library="httpclient",netCoreProjectFile="true",nullableReferenceTypes="true"
+            --additional-properties=packageName="NjuCsCmsHelper.Server.Api",packageVersion="$revision",targetFramework="net7.0",library="httpclient",netCoreProjectFile="true",nullableReferenceTypes="true"
 
           zip -r cs-client.zip Api
 

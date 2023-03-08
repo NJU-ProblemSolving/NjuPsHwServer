@@ -1,6 +1,6 @@
 namespace NjuCsCmsHelper.Server.Controllers;
 
-using Models;
+using Datas;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -62,6 +62,24 @@ public class AssignmentController : AppControllerBase<AssignmentController>
         assignmentInDb.Name = assignment.Name;
         assignmentInDb.NumberOfProblems = assignment.NumberOfProblems;
         assignmentInDb.Deadline = assignment.Deadline;
+        await dbContext.SaveChangesAsync();
+
+        return NoContent();
+    }
+
+    /// <summary>删除作业信息</summary>
+    [HttpDelete]
+    [Authorize("Admin")]
+    [Route("{assignmentId:int}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteAssignment(int assignmentId)
+    {
+        var assignment = await dbContext.Assignments.SingleAsync(a => a.Id == assignmentId);
+        if (assignment == null) return NotFound("Assignment ID not found");
+
+        dbContext.Assignments.Remove(assignment);
         await dbContext.SaveChangesAsync();
 
         return NoContent();
