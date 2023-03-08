@@ -5,17 +5,15 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Authentication.OpenIdConnect;
 using Microsoft.Extensions.Caching.Memory;
 using Microsoft.IdentityModel.Tokens;
+using NjuCsCmsHelper.Datas;
 using NjuCsCmsHelper.Models;
 using NjuCsCmsHelper.Server.Services;
-using Swashbuckle.AspNetCore.Filteres;
+using Swashbuckle.AspNetCore.Filters;
 using Swashbuckle.AspNetCore.SwaggerGen;
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.ConfigureAppConfiguration(config =>
-{
-    config.AddJsonFile("data/appsettings.json", optional: true);
-});
+builder.Configuration.AddJsonFile("data/appsettings.json", optional: true);
 
 builder.Services.AddControllers();
 
@@ -86,7 +84,7 @@ if (builder.Configuration.GetSection("Jwt").Exists())
             ValidIssuer = builder.Configuration["Jwt:Issuer"],
             ValidAudience = builder.Configuration["Jwt:Audience"],
             IssuerSigningKey = new X509SecurityKey(new X509Certificate2(
-                builder.Configuration["Jwt:Certificate"], builder.Configuration["Jwt:Password"]
+                builder.Configuration["Jwt:Certificate"]!, builder.Configuration["Jwt:Password"]
             ))
         };
     });

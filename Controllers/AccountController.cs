@@ -21,6 +21,7 @@ public class AccountController : AppControllerBase<AccountController>
 
         var studentId = tokenInfo.StudentId;
         var studentName = tokenInfo.Student.Name;
+        var reviewerName = AppConfig.ReviewerName[tokenInfo.Student.ReviewerId];
         var claims = new List<Claim> {
             new Claim(AppUserClaims.StudentId, studentId.ToString(NumberFormatInfo.InvariantInfo)),
             new Claim(AppUserClaims.StudentName, studentName),
@@ -31,7 +32,7 @@ public class AccountController : AppControllerBase<AccountController>
         var principal = new ClaimsPrincipal(identity);
         await HttpContext.SignInAsync(principal, new AuthenticationProperties { IsPersistent = true });
 
-        return Ok(new AccountInfo { Id = studentId, Name = studentName, IsAdmin = tokenInfo.IsAdmin });
+        return Ok(new AccountInfo { Id = studentId, Name = studentName, ReviewerName = reviewerName, IsAdmin = tokenInfo.IsAdmin });
     }
 
     [HttpPost]
@@ -66,19 +67,7 @@ public class AccountController : AppControllerBase<AccountController>
         if (token is null)
             return Unauthorized("Student is not registered");
 
-        var claims = new List<Claim> {
-            new Claim(AppUserClaims.StudentId, studentId.ToString(CultureInfo.InvariantCulture)),
-            new Claim(AppUserClaims.StudentName, studentName.Value),
-        };
-
-        var isAdmin = res.Principal.IsInRole("Administrator") && token.IsAdmin;
-        if (isAdmin) claims.Add(new Claim(ClaimTypes.Role, "Admin"));
-
-        var identity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-        var principal = new ClaimsPrincipal(identity);
-        await HttpContext.SignInAsync(principal, new AuthenticationProperties { IsPersistent = true });
-
-        return Ok(new AccountInfo { Id = studentId, Name = studentName.Value, IsAdmin = isAdmin, Token = token.Id });
+        return await Login(token.Id);
     }
 
     [HttpGet]
@@ -95,6 +84,8 @@ public class AccountInfo
     public int Id { get; set; }
     [Required]
     public string Name { get; set; } = null!;
+    [Required]
+    public string ReviewerName { get; set; } = null!;
     [Required]
     public bool IsAdmin { get; set; }
     public string? Token { get; set; }

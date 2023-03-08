@@ -1,6 +1,6 @@
 namespace NjuCsCmsHelper.Server.Controllers;
 
-using Models;
+using Datas;
 using Services;
 
 public abstract class AppControllerBase<T> : ControllerBase

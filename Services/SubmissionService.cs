@@ -1,7 +1,7 @@
 namespace NjuCsCmsHelper.Server.Services;
 
 using System.IO.Compression;
-using NjuCsCmsHelper.Models;
+using NjuCsCmsHelper.Datas;
 
 public class SubmissionService
 {
@@ -68,12 +68,9 @@ public class SubmissionService
         await dbContext.SaveChangesAsync();
     }
 
-    public async Task<Stream> GenerateArchiveAsync(int assignmentId, int? reviewerId, string assignmentName, IEnumerable<AttachmentInfo> attachmentList)
+    public Stream OpenRead(int attachmentId)
     {
-        var stream = new MemoryStream();
-        await GetArchiveAsync(assignmentId, reviewerId, assignmentName, attachmentList, stream);
-        stream.Seek(0, SeekOrigin.Begin);
-        return stream;
+        return File.OpenRead(Path.Join(attachmentDir, attachmentId.ToString(NumberFormatInfo.InvariantInfo)));
     }
 
     public async Task GetArchiveAsync(int assignmentId, int? reviewerId, string assignmentName, IEnumerable<AttachmentInfo> attachmentList, Stream outStream)
@@ -102,7 +99,7 @@ public class SubmissionService
         foreach (var attachmentInfo in attachmentList)
         {
             var entry = zipStream.CreateEntry($"{assignmentName}/{attachmentInfo.AttachmentFilename}");
-            using var file = File.OpenRead($"{attachmentDir}/{attachmentInfo.AttachmentId}");
+            using var file = OpenRead(attachmentInfo.AttachmentId);
             using var entryStream = entry.Open();
             await file.CopyToAsync(entryStream);
         }

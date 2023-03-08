@@ -1,6 +1,6 @@
 namespace NjuCsCmsHelper.Server.Controllers;
 
-using Models;
+using Datas;
 
 [Route("api/[controller]")]
 [ApiController]
@@ -49,7 +49,8 @@ public class SummaryController : AppControllerBase<SummaryController>
                     res.Append(", ").Append(submission.Grade.GetDescription());
                     var basicScore = (double)submission.Grade.ToScore();
                     var assignmentScore = basicScore;
-                    if (submission.Grade == Grade.None) {
+                    if (submission.Grade == Grade.None)
+                    {
                         assignmentScore = 60;
                     }
                     // 迟交
@@ -57,7 +58,8 @@ public class SummaryController : AppControllerBase<SummaryController>
                     {
                         res.Append('*');
                         assignmentScore -= 10;
-                        if (submission.SubmittedAt - assignments[assignmentId].Deadline > TimeSpan.FromDays(14)) {
+                        if (submission.SubmittedAt - assignments[assignmentId].Deadline > TimeSpan.FromDays(14))
+                        {
                             res.Append('*');
                             assignmentScore -= 10;
                         }

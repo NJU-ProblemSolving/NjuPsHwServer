@@ -4,6 +4,7 @@ using System.Text;
 using MailKit.Net.Smtp;
 using Microsoft.Extensions.Caching.Memory;
 using MimeKit;
+using NjuCsCmsHelper.Datas;
 using NjuCsCmsHelper.Models;
 
 public class MailingService

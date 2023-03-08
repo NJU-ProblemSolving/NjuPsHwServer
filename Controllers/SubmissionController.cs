@@ -1,5 +1,6 @@
 namespace NjuCsCmsHelper.Server.Controllers;
 
+using Datas;
 using Models;
 using Services;
 
@@ -13,6 +14,7 @@ public class SubmissionController : AppControllerBase<SubmissionController>
     /// <summary>获取某个学生的作业情况汇总</summary>
     [HttpGet]
     [Authorize]
+    [Route("Summary")]
     [ProducesResponseType(typeof(List<SubmissionDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetSubmissionSummary([Required] int studentId)
@@ -89,5 +91,67 @@ public class SubmissionController : AppControllerBase<SubmissionController>
         {
             return NoContent();
         }
+    }
+
+    /// <summary>获取学生提交的附件</summary>
+    /// <param name="studentId">学生ID</param>
+    /// <param name="assignmentId">作业ID</param>
+    /// <returns>包含附件的压缩包</returns>
+    [HttpGet]
+    [Route("Attachments")]
+    [Produces("application/octet-stream")]
+    [ProducesResponseType(typeof(byte[]), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetSubmissionAttachments(int studentId, int assignmentId)
+    {
+        var authorizeResult =
+            await authorizationService.AuthorizeAsync(User, studentId, OwnerOrAdminRequirement.Instance);
+        if (!authorizeResult.Succeeded) return Forbid();
+
+        if (!await dbContext.Assignments.AnyAsync(a => a.Id == assignmentId)) return NotFound("Assignment not found");
+        if (!await dbContext.Students.AnyAsync(s => s.Id == studentId)) return NotFound("Student not found");
+
+        var attachments = await dbContext.Submissions.Where(s => s.StudentId == studentId && s.AssignmentId == assignmentId).Select(s => s.Attachments.ToList()).SingleOrDefaultAsync();
+        if (attachments == null) return NotFound("Submission not found");
+
+        if (attachments.Count == 0)
+        {
+            return NoContent();
+        }
+        else if (attachments.Count == 1)
+        {
+            var attachment = attachments.Single();
+            var stream = submissionService.OpenRead(attachment.Id);
+            return File(stream, "application/octet-stream", attachment.Filename);
+        }
+        else
+        {
+            return Forbid();
+        }
+    }
+
+    /// <summary>删除作业提交</summary>
+    /// <param name="studentId">学生ID</param>
+    /// <param name="assignmentId">作业ID</param>
+    [HttpDelete]
+    [Authorize]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    public async Task<IActionResult> DeleteSubmission(int studentId, int assignmentId)
+    {
+        var authorizeResult =
+            await authorizationService.AuthorizeAsync(User, studentId, OwnerOrAdminRequirement.Instance);
+        if (!authorizeResult.Succeeded) return Forbid();
+
+        if (!await dbContext.Assignments.AnyAsync(a => a.Id == assignmentId)) return NotFound("Assignment not found");
+        if (!await dbContext.Students.AnyAsync(s => s.Id == studentId)) return NotFound("Student not found");
+
+        var submission = await dbContext.Submissions.SingleOrDefaultAsync(s => s.StudentId == studentId && s.AssignmentId == assignmentId);
+        if (submission == null) return NotFound("Submission not found");
+
+        dbContext.Submissions.Remove(submission);
+        await dbContext.SaveChangesAsync();
+
+        return NoContent();
     }
 }
