@@ -32,7 +32,7 @@ public class AccountController : AppControllerBase<AccountController>
         var principal = new ClaimsPrincipal(identity);
         await HttpContext.SignInAsync(principal, new AuthenticationProperties { IsPersistent = true });
 
-        return Ok(new AccountInfo { Id = studentId, Name = studentName, ReviewerName = reviewerName, IsAdmin = tokenInfo.IsAdmin });
+        return Ok(new AccountInfo { Id = studentId, Name = studentName, ReviewerName = reviewerName, IsAdmin = tokenInfo.IsAdmin, Token = token });
     }
 
     [HttpPost]
