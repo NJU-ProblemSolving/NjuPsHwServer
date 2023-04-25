@@ -55,7 +55,7 @@ public class AssignmentController : AppControllerBase<AssignmentController>
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateAssignment(int assignmentId, [FromBody] Assignment assignment)
     {
-        if (assignment.Id != 0 && assignment.Id != assignmentId) return BadRequest();
+        if (assignment.Id == 0) assignment.Id = assignmentId;
         var assignmentInDb = await dbContext.Assignments.SingleAsync(a => a.Id == assignmentId);
         if (assignmentInDb == null) return NotFound("Assignment ID not found");
 
