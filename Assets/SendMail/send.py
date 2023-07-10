@@ -17,7 +17,6 @@ reviewerName = ['李晗', '桑百惠', '赵超懿', '姚梦雨'][reviewerId - 1]
 assignmentId = #$assignmentId
 assignmentName = #$assignmentName
 attachmentDir = '.'
-apiUrl = 'https://hw.problemsolving.top/api'
 
 # 文件目录形如
 # ./
@@ -36,6 +35,8 @@ with open('sendconfig.json') as f:
 smtpServer = config['smtpServer']
 smtpUsername = config['smtpUsername']
 smtpPassword = config['smtpPassword']
+apiUrl = config['apiUrl']
+apiToken = config['apiToken']
 
 
 def send(server, info):
@@ -64,10 +65,11 @@ def send(server, info):
         attachmentTips = '批改详见附件，'
 
     mainMsg = MIMEText(f'''
-{info['studentName']}同学你好，你提交的作业 {assignmentName} 已经由 {reviewerName} 批改完成。
+{info['studentName']}同学你好，你提交的作业 {assignmentName} 已经由 {reviewerName} 批改。
 你的评分是 {grade} 。
 {needCorrection}{hasCorrected}
-{comment}{attachmentTips}如有疑问可以咨询助教。
+{comment}{attachmentTips}如有疑问可以直接联系助教。
+
 祝顺利！
 21级问题求解助教团队
     '''.strip())
@@ -90,7 +92,7 @@ if os.path.exists('hasSent.txt'):
         hasSent = set(map(lambda x: int(x.strip()), f.readlines()))
 
 session = request.build_opener(request.HTTPCookieProcessor(CookieJar()))
-req = request.Request(f'{apiUrl}/Account/Login', data='"1708e2e9"'.encode())
+req = request.Request(f'{apiUrl}/Account/Login', data=f'"{apiToken}"'.encode())
 req.add_header('Content-Type', 'application/json')
 res = session.open(req)
 req = request.Request(f'{apiUrl}/Review/{assignmentId}?reviewerId={reviewerId}')
@@ -98,7 +100,7 @@ res = session.open(req).read()
 infos = json.loads(res)
 reviewedCnt = len(list(filter(lambda x: x["grade"] != 0, infos)))
 fingerPrint = hashlib.sha1(res).hexdigest()
-print(f'准备发送作业{assignmentName}，共有{reviewedCnt}份，{len(infos)-reviewedCnt}份未批改，指纹：{fingerPrint}')
+print(f'准备发送作业{assignmentName}，已批改{reviewedCnt}份，{len(infos)-reviewedCnt}份未批改，指纹：{fingerPrint}')
 input('按回车以确认...')
 
 server = smtplib.SMTP()
