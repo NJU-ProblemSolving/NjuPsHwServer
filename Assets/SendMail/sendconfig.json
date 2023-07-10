@@ -1,5 +1,7 @@
 {
     "smtpServer": "smtp.exmail.qq.com",
     "smtpUsername": "191870085@smail.nju.edu.cn",
-    "smtpPassword": "******"
+    "smtpPassword": "******",
+    "apiUrl": "https://hw.problemsolving.top/api",
+    "apiToken": "******"
 }
