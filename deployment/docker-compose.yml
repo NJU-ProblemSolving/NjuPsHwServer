@@ -2,7 +2,7 @@ version: '3'
 
 services:
   frontend:
-    image: undefined01/njupshwfrontend:2023-04-04-4467147
+    image: undefined01/njupshwfrontend:main
     labels:
       - "traefik.enable=true"
       - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"

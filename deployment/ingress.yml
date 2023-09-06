@@ -3,10 +3,10 @@ kind: Ingress
 metadata:
   name: ingress
 spec:
-  tls:
-  - hosts:
-      - hw.problemsolving.top
-    secretName: tls
+  # tls:
+  # - hosts:
+  #     - hw.problemsolving.top
+  #   secretName: tls
   rules:
   - host: hw.problemsolving.top
     http:
