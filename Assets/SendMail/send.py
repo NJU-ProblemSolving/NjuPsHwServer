@@ -13,7 +13,7 @@ from urllib import parse, request
 from http.cookiejar import CookieJar
 
 reviewerId = #$reviewerId
-reviewerName = ['李晗', '桑百惠', '赵超懿', '姚梦雨'][reviewerId - 1]
+reviewerName = ['陈子元', '付博', '缪天顺', '赵欣玥'][reviewerId - 1]
 assignmentId = #$assignmentId
 assignmentName = #$assignmentName
 attachmentDir = '.'
@@ -42,7 +42,7 @@ apiToken = config['apiToken']
 def send(server, info):
     msg = MIMEMultipart()
     msg['to'] = formataddr((info['studentName'], f'{info["studentId"]}@smail.nju.edu.cn'))
-    msg['from'] = formataddr(('21级问题求解助教团队', smtpUsername))
+    msg['from'] = formataddr(('23级问题求解助教团队', smtpUsername))
     msg['subject'] = f'【问题求解】作业{assignmentName}批改反馈'
 
     grade = ['-', 'A', 'A-', 'B', 'B-', 'C', 'D'][info['grade']]
@@ -71,7 +71,7 @@ def send(server, info):
 {comment}{attachmentTips}如有疑问可以直接联系助教。
 
 祝顺利！
-21级问题求解助教团队
+23级问题求解助教团队
     '''.strip())
     msg.attach(mainMsg)
 
