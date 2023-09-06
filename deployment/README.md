@@ -16,6 +16,19 @@
 * `appsettings.json` 需要管理员根据实际情况手动配置。可参考 JSON Schema `appsettings.schema.json` ，或基于 `appsettings.example.json` 修改。
 * `sqlite.db` 为数据库文件，通常由 Entity Framework Core 自动创建。可参考 [EF Core 官方文档](https://learn.microsoft.com/en-us/ef/core/get-started/overview/install#get-the-net-core-cli-tools) 安装相关辅助工具，并使用 `dotnet ef database update` 生成空白数据库。
 
+    尽管后端可以使用 [v0.7](https://github.com/NJU-ProblemSolving/NjuPsHwServer/tree/v0.7) 生成的空白数据库启动，但此时数据库中没有管理员账号。
+
+    * 手动添加管理员账号
+
+        需要向数据库中增加一个账号，并为账号分配一个有管理员权限的 token。可以使用 `sqlite3` 命令打开数据库，并执行以下指令：
+
+        ```sqlite
+        INSERT INTO Students (Id, Name, ReviewerId) VALUES (231200012, "张三", 1);
+        INSERT INTO Tokens (Id, StudentId, IsAdmin) VALUES ("InitToken", 231200012, 1);
+        ```
+
+        这会在数据库中新增学号为 231200012 的账号，登录 token 为 InitToken。
+
 以上为必要配置，还有一些可选功能需要额外配置：
 
 * `appsettings.json` 中的 `Smtp` 部分为邮件发送配置。在重置密码等功能中使用。
