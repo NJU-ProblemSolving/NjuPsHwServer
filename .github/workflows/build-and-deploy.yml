@@ -142,7 +142,7 @@ jobs:
 
           docker run --rm -v ${PWD}:/app openapitools/openapi-generator-cli generate \
             -i /app/swagger.json \
-            -g csharp-netcore \
+            -g csharp \
             -o /app/Api \
             --additional-properties=packageName="NjuCsCmsHelper.Server.Api",packageVersion="$revision",targetFramework="net7.0",library="httpclient",netCoreProjectFile="true",nullableReferenceTypes="true"
 
