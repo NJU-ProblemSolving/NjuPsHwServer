@@ -29,6 +29,7 @@ jobs:
       reponame: ${{ steps.info.outputs.reponame }}
       reponame_lowercase: ${{ steps.info.outputs.reponame_lowercase }}
       deploy_environment: ${{ steps.info.outputs.deploy_environment }}
+      docker_hub_configured: ${{ steps.info.outputs.docker_hub_configured }}
     steps:
       - uses: actions/checkout@v3
 
@@ -39,12 +40,16 @@ jobs:
           date="$(git log -1 --pretty='format:%cd' --date=short 2>/dev/null)"
           hash="$(git log -1 --pretty='format:%h' 2>/dev/null)"
           test "$tag" && revision="$tag-$hash" || revision="$date-$hash"
+
           echo "tag=$tag"
           echo "revision=$revision"
           echo "deploy_environment=$(echo '${{ env.deploy_environment }}' | jq -r '."${{ github.ref }}"')"
+          echo "docker_hub_configured=${{ secrets.DOCKER_HUB_USERNAME != '' && secrets.DOCKER_HUB_ACCESS_TOKEN != '' }}"
           echo "tag=$tag" >> "$GITHUB_OUTPUT"
           echo "revision=$revision" >> "$GITHUB_OUTPUT"
           echo "deploy_environment=$(echo '${{ env.deploy_environment }}' | jq -r '."${{ github.ref }}"')" >> "$GITHUB_OUTPUT"
+          echo "docker_hub_configured=${{ secrets.DOCKER_HUB_USERNAME != '' && secrets.DOCKER_HUB_ACCESS_TOKEN != '' }}" >> "$GITHUB_OUTPUT"
+
           test "$reponame" || reponame="${GITHUB_REPOSITORY##*/}"
           test "$reponame_lowercase" || reponame_lowercase="${reponame,,}"
           echo "reponame=$reponame"
@@ -54,7 +59,7 @@ jobs:
 
       - name: Login to Docker Hub
         uses: docker/login-action@v2
-        if: ${{ secrets.DOCKER_HUB_USERNAME != '' && secrets.DOCKER_HUB_ACCESS_TOKEN != '' }}
+        if: ${{ steps.info.outputs.docker_hub_configured }}
         with:
           username: '${{ secrets.DOCKER_HUB_USERNAME }}'
           password: '${{ secrets.DOCKER_HUB_ACCESS_TOKEN }}'
@@ -65,7 +70,7 @@ jobs:
           context: ./
           file: ./deployment/Dockerfile
           build-args: REVISION=${{ steps.info.outputs.revision }}
-          push: ${{ github.event_name != 'pull_request' && secrets.DOCKER_HUB_USERNAME != '' && secrets.DOCKER_HUB_ACCESS_TOKEN != '' }}
+          push: ${{ github.event_name != 'pull_request' && steps.info.outputs.docker_hub_configured }}
           tags: |
             ${{ secrets.DOCKER_HUB_USERNAME }}/${{ steps.info.outputs.reponame_lowercase }}:${{ github.ref_name }}
             ${{ secrets.DOCKER_HUB_USERNAME }}/${{ steps.info.outputs.reponame_lowercase }}:${{ steps.info.outputs.revision }}
