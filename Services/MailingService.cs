@@ -32,7 +32,7 @@ public class MailingService
         try
         {
             using var client = new SmtpClient();
-            await client.ConnectAsync(smtpConfig["Host"]);
+            await client.ConnectAsync(smtpConfig["Host"], System.Convert.ToInt32(smtpConfig["Port"]));
             await client.AuthenticateAsync(smtpConfig["Username"], smtpConfig["Password"]);
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
