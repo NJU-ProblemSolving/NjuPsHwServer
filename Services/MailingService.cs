@@ -32,6 +32,7 @@ public class MailingService
         try
         {
             using var client = new SmtpClient();
+            WebRequest.DefaultWebProxy = new WebProxy("sproxy.nju.edu.cn", 8080);
             await client.ConnectAsync(smtpConfig["Host"], System.Convert.ToInt32(smtpConfig["Port"]));
             await client.AuthenticateAsync(smtpConfig["Username"], smtpConfig["Password"]);
             await client.SendAsync(message);
