@@ -33,7 +33,8 @@ public class MailingService
         try
         {
             using var client = new SmtpClient();
-            client.ProxyClient = new HttpProxyClient("127.0.0.1", 8087);
+            var proxy = new HttpProxyClient("114.212.84.110", 808);
+            client.ProxyClient = proxy;
             await client.ConnectAsync(smtpConfig["Host"]);
             await client.AuthenticateAsync(smtpConfig["Username"], smtpConfig["Password"]);
             await client.SendAsync(message);
