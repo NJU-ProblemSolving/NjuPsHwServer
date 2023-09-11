@@ -33,9 +33,8 @@ public class MailingService
         try
         {
             using var client = new SmtpClient();
-            if (smtpConfig["Proxy"] != null && smtpConfig["ProxyPort"] != null) 
-                client.ProxyClient = new HttpProxyClient(smtpConfig["Proxy"], smtpConfig.GetValue<int>("ProxyPort"));
-            await client.ConnectAsync(smtpConfig["Host"], smtpConfig.GetValue<int>("HostPort"));
+            client.ProxyClient = new HttpProxyClient("127.0.0.1", 8123);
+            await client.ConnectAsync(smtpConfig["Host"]);
             await client.AuthenticateAsync(smtpConfig["Username"], smtpConfig["Password"]);
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
