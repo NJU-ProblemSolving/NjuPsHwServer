@@ -2,7 +2,7 @@ namespace NjuCsCmsHelper.Server.Services;
 
 using System.Text;
 using MailKit.Net.Smtp;
-using MailKit.Net.Proxy.HttpProxyClient;
+using MailKit.Net.Proxy;
 using Microsoft.Extensions.Caching.Memory;
 using MimeKit;
 using NjuCsCmsHelper.Datas;
