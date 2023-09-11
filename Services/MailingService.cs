@@ -36,7 +36,7 @@ public class MailingService
             var proxy = new HttpProxyClient("114.212.84.110", 808);
             client.ProxyClient = proxy;
             client.CheckCertificateRevocation = false;
-            await client.ConnectAsync(smtpConfig["Host"]);
+            await client.ConnectAsync(smtpConfig["Host"], 465); // specific for smtp.exmail.qq.com
             await client.AuthenticateAsync(smtpConfig["Username"], smtpConfig["Password"]);
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
