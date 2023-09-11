@@ -2,6 +2,7 @@ namespace NjuCsCmsHelper.Server.Services;
 
 using System.Text;
 using MailKit.Net.Smtp;
+using MailKit.Net.Proxy.HttpProxyClient;
 using Microsoft.Extensions.Caching.Memory;
 using MimeKit;
 using NjuCsCmsHelper.Datas;
@@ -32,7 +33,9 @@ public class MailingService
         try
         {
             using var client = new SmtpClient();
-            await client.ConnectAsync(smtpConfig["Host"], System.Convert.ToInt32(smtpConfig["Port"]));
+            if (smtpConfig["Proxy"] != null && smtpConfig["ProxyPort"] != null) 
+                client.ProxyClient = new HttpProxyClient(smtpConfig["Proxy"], System.Convert.ToInt32(smtpConfig["ProxyPort"]));
+            await client.ConnectAsync(smtpConfig["Host"], System.Convert.ToInt32(smtpConfig["HostPort"]));
             await client.AuthenticateAsync(smtpConfig["Username"], smtpConfig["Password"]);
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
