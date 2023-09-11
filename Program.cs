@@ -10,8 +10,11 @@ using NjuCsCmsHelper.Models;
 using NjuCsCmsHelper.Server.Services;
 using Swashbuckle.AspNetCore.Filters;
 using Swashbuckle.AspNetCore.SwaggerGen;
+using System.Net;
 
 var builder = WebApplication.CreateBuilder(args);
+
+WebRequest.DefaultWebProxy = new WebProxy("sproxy.nju.edu.cn", 8080);
 
 builder.Configuration.AddJsonFile("data/appsettings.json", optional: true);
 
