@@ -48,13 +48,12 @@ public class MailingService
         }
     }
 
-    public async Task SendToken(int studentId)
+    public async Task SendToken(int studentId, string token)
     {
         var studentName = await dbContext.Students.Where(student => student.Id == studentId).Select(student => student.Name).SingleOrDefaultAsync();
         if (studentName == null) throw new HttpResponseException(StatusCodes.Status404NotFound, "Student not found");
 
-        var token = await dbContext.Tokens.Where(t => t.StudentId == studentId).Select(t => t.Id).FirstOrDefaultAsync();
-        if (token == null) throw new HttpResponseException(StatusCodes.Status404NotFound, "Token not found");
+        if (token == null) throw new HttpResponseException(StatusCodes.Status404NotFound, "Giving Null TOken to reset.");
 
         if (cache.TryGetValue(studentId, out _))
             throw new HttpResponseException(StatusCodes.Status429TooManyRequests, "在最近一小时内已发送过邮件，请稍后再试。");

@@ -72,25 +72,17 @@ public class StudentController : AppControllerBase<StudentController>
         var student = await dbContext.Students.Where(student => student.Id == studentId).SingleOrDefaultAsync();
         if (student == null) return NotFound("Student ID not found");
 
-        var token = await dbContext.Tokens.FirstOrDefaultAsync(token => token.StudentId == studentId);
-        if (token == null) {
-            token = new Token { StudentId = studentId, Id = null!, IsAdmin = false };
-        }
-        else {
-            dbContext.Tokens.Remove(token);
-        }
-
+        var token = new Token { StudentId = studentId, Id = null!, IsAdmin = false };
         var random = new Random();
         var base62 = "0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz";
         var sb = new System.Text.StringBuilder();
         for (var i = 0; i < 10; i++)
             sb.Append(base62[random.Next(62)]);
         token.Id = sb.ToString();
-        dbContext.Tokens.Add(token);
 
         try
         {
-            await mailingService.SendToken(studentId);
+            await mailingService.SendToken(studentId, token.Id);
         }
         catch (HttpResponseException ex)
         {
@@ -100,6 +92,12 @@ public class StudentController : AppControllerBase<StudentController>
             };
         }
 
+        var tokenget = await dbContext.Tokens.FirstOrDefaultAsync(token => token.StudentId == studentId);
+        if(tokenget != null) {
+            dbContext.Tokens.Remove(tokenget);
+            await dbContext.SaveChangesAsync();
+        }
+        dbContext.Tokens.Add(token);
         await dbContext.SaveChangesAsync();
         return Ok();
     }
