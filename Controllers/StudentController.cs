@@ -73,14 +73,11 @@ public class StudentController : AppControllerBase<StudentController>
         if (student == null) return NotFound("Student ID not found");
 
         var token = await dbContext.Tokens.FirstOrDefaultAsync(token => token.StudentId == studentId);
-        if (token == null)
-        {
+        if (token == null) {
             token = new Token { StudentId = studentId, Id = null!, IsAdmin = false };
         }
-        else
-        {
+        else {
             dbContext.Tokens.Remove(token);
-            await dbContext.SaveChangesAsync();
         }
 
         var random = new Random();
