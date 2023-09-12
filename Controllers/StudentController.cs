@@ -89,7 +89,7 @@ public class StudentController : AppControllerBase<StudentController>
         for (var i = 0; i < 10; i++)
             sb.Append(base62[random.Next(62)]);
         token.Id = sb.ToString();
-
+        dbContext.Tokens.Add(token);
 
         try
         {
@@ -103,9 +103,7 @@ public class StudentController : AppControllerBase<StudentController>
             };
         }
 
-        dbContext.Tokens.Add(token);
         await dbContext.SaveChangesAsync();
-        
         return Ok();
     }
 }
