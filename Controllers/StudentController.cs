@@ -3,6 +3,7 @@ namespace NjuCsCmsHelper.Server.Controllers;
 using AutoMapper;
 using Datas;
 using Services;
+using NjuCsCmsHelper.Models;
 
 [Route("api/[controller]")]
 [ApiController]
