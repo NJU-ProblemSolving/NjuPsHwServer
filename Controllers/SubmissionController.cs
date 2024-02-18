@@ -76,6 +76,11 @@ public class SubmissionController : AppControllerBase<SubmissionController>
         if (!await dbContext.Students.AnyAsync(s => s.Id == studentId)) return NotFound("Student not found");
         if (submittedAt != null && !User.IsInRole("Admin")) return Forbid("Unauthorized to set submission time");
 
+        var assignmentInDb = await dbContext.Assignments.SingleOrDefaultAsync(a => a.Id == assignmentId);
+        var submissionInDb = await dbContext.Submissions.SingleOrDefaultAsync(s => s.StudentId == studentId && s.AssignmentId == assignmentId);
+        if (assignmentInDb != null && submissionInDb != null &&
+            submissionInDb.SubmittedAt >= assignmentInDb.Deadline) return BadRequest("The submission is locked already");
+
         var submission = new Submission
         {
             StudentId = studentId,
