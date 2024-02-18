@@ -42,7 +42,7 @@ apiToken = config['apiToken']
 def send(server, info):
     msg = MIMEMultipart()
     msg['to'] = formataddr((info['studentName'], f'{info["studentId"]}@smail.nju.edu.cn'))
-    msg['from'] = formataddr(('23级问题求解助教团队', smtpUsername))
+    msg['from'] = formataddr(('22级问题求解助教团队', smtpUsername))
     msg['subject'] = f'【问题求解】作业{assignmentName}批改反馈'
 
     grade = ['-', 'A', 'A-', 'B', 'B-', 'C', 'D'][info['grade']]
@@ -71,7 +71,7 @@ def send(server, info):
 {comment}{attachmentTips}如有疑问可以直接联系助教。
 
 祝顺利！
-23级问题求解助教团队
+22级问题求解助教团队
     '''.strip())
     msg.attach(mainMsg)
 

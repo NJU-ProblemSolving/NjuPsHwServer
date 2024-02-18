@@ -79,7 +79,7 @@ public class SubmissionController : AppControllerBase<SubmissionController>
         var assignmentInDb = await dbContext.Assignments.SingleOrDefaultAsync(a => a.Id == assignmentId);
         var submissionInDb = await dbContext.Submissions.SingleOrDefaultAsync(s => s.StudentId == studentId && s.AssignmentId == assignmentId);
         if (assignmentInDb != null && submissionInDb != null &&
-            submissionInDb.SubmittedAt >= assignmentInDb.Deadline) return BadRequest("The submission is locked already");
+            submissionInDb.SubmittedAt >= assignmentInDb.Deadline) return BadRequest("The submission is locked already.\n 截止日期后最多可提交一次作业。");
 
         var submission = new Submission
         {
