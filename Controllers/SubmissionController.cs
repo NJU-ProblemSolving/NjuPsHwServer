@@ -83,10 +83,7 @@ public class SubmissionController : AppControllerBase<SubmissionController>
                 return BadRequest("作业截止后已有一份提交（已锁定），无法再次提交。");
             }
             
-            if (submissionInDb.Grade != Grade.None || 
-                submissionInDb.HasCorrected.Count > 0 ||
-                submissionInDb.NeedCorrection.Count > 0 || 
-                submissionInDb.Comment != null) {
+            if (submissionInDb.Grade != Grade.None) {
                 return BadRequest("此作业已经被批改（已锁定），无法再次提交。");
             }
         }
