@@ -60,7 +60,7 @@ public class MailingService
         message.From.Add(new MailboxAddress(metaConfig["Organization"], smtpConfig["Username"]));
         message.To.Add(new MailboxAddress(studentName, $"{studentId}@smail.nju.edu.cn"));
         message.Subject = "【问题求解】作业系统 Token";
-        var text = $"\n登录 Token 已被重置为 {token} 。\n前往问题求解作业平台 {metaConfig["Website"]} 以继续。\n\n";
+        var text = $"\n当前登录 Token 为 {token} 。\n请前往问题求解作业平台 {metaConfig["Website"]} 以继续。\n\n";
         message.Body = new TextPart("plain") { Text = text };
 
         await SendMail(message);
