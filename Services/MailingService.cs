@@ -33,7 +33,7 @@ public class MailingService
         try
         {
             using var client = new SmtpClient();
-            await client.ConnectAsync(smtpConfig["Host"]); // 465 for SSL
+            await client.ConnectAsync(smtpConfig["Host"], int.Parse(smtpConfig["Port"]));
             await client.AuthenticateAsync(smtpConfig["Username"], smtpConfig["Password"]);
             await client.SendAsync(message);
             await client.DisconnectAsync(true);
